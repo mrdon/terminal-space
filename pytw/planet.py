@@ -1,6 +1,9 @@
 from collections import namedtuple
 import enum
 
+import networkx
+from pytw.graph import gen_hex_center, remove_warps
+
 
 Cost = namedtuple("Cost", ["credits", "fuel_ore", "organics", "equipment", "colonists", "time", "citadel_level_min"])
 
@@ -63,22 +66,33 @@ class Planet:
 
 class Sector:
 
-    def __init__(self, sector_id, warps):
-        self.sector_id = sector_id
-        self.warps = warps
+    def __init__(self, sector_id, coords, warps):
+        self.sector_id = int(sector_id)
+        self.warps = [int(x) for x in warps]
         self.planets = []
         self.ships = []
+        self.coords = coords
 
 
 class Player:
 
-    def __init__(self, player_id, name):
+    def __init__(self, game, player_id, name):
         self.name = name
         self.id = player_id
+        self.game = game
+        self.visited_sectors = set()
+
+    def has_visited(self, sector_id):
+        return sector_id in self.visited_sectors
+
+    def visit_sector(self, sector_id):
+        self.visited_sectors.add(int(sector_id))
 
 
 ShipTypeArgs = namedtuple("ShipTypeArgs", ["name", "cost", "fighters_max", "fighters_per_wave", "holds_initial",
                                            "holds_max", "warp_cost", "offensive_odds", "defensive_odds"])
+
+
 class ShipType(ShipTypeArgs, enum.Enum):
 
     MERCHANT = ShipTypeArgs(name="Merchant Cruiser",
@@ -91,6 +105,7 @@ class ShipType(ShipTypeArgs, enum.Enum):
                             offensive_odds=1,
                             defensive_odds=1)
 
+
 class Ship:
     def __init__(self, ship_type, ship_id, name, player_id):
         self.name = name
@@ -100,23 +115,42 @@ class Ship:
 
 
 class Game:
-    def __init__(self, game_id, name):
+    def __init__(self, game_id, name, diameter):
         self.id = game_id
         self.name = name
+        self.diameter = diameter
 
         self.sectors = {}
+        self.sector_coords_to_id = {}
         self.players = {}
+        self._graph = None
 
-    def _bang_world(self, radius):
-        for x in [(radius-abs(x-int(radius/2))) for x in range(radius)]:
-            for y in range(radius-x):
-                print(' '),
-        for y in range(x):
-            print(' * '),
-        print('')
+    def add_player(self, name):
+        p = Player(self, 1, name)
+        p.visit_sector(self.coords_to_id(0, 0))
+        self.players[p.id] = p
+        return p
+
+    def id_to_coords(self, sector_id):
+        return self.sectors[sector_id].coords
+
+    def coords_to_id(self, x, y):
+        return self.sector_coords_to_id[(x, y)]
+
+    def _bang_world(self):
+        density = 3.5
+
+        g = gen_hex_center(self.diameter)
+        remove_warps(g, density)
+        self._graph = g
+
+        self.sector_coords_to_id = networkx.get_node_attributes(g, "sector_id")
+        self.sector_coords_to_id[(0, 0)] = 1
+
+        for n in g.nodes_iter():
+            warps = [self.coords_to_id(*target) for target in g.neighbors(n)]
+            sector_id = self.coords_to_id(*n)
+            self.sectors[sector_id] = Sector(sector_id, n, warps)
 
     def start(self):
-        self._bang_world(5)
-
-
-Game('1', 'asdf').start()
+        self._bang_world()

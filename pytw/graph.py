@@ -30,6 +30,14 @@ def gen_hex_center(size):
         g.add_edge((x * -1, radius * -1 + x), (x * -1 - 1, radius * -1 + x + 1))
         g.add_edge((x, radius - x), (x + 1, radius - x - 1))
 
+    id_next = 1
+    hit_nodes = set()
+    for s, t in nx.bfs_edges(g, (0, 0)):
+        if t not in hit_nodes:
+            hit_nodes.add(t)
+            id_next += 1
+            g.add_node(t, sector_id=id_next)
+
     return g.to_directed()
 
 
@@ -46,7 +54,7 @@ def gen_2d_grid(size):
     return g.to_directed()
 
 
-def remove_warps(g):
+def remove_warps(g, density):
     target_edge_count = int(g.number_of_nodes() * density)
     print("num: {} : {}".format(target_edge_count, nx.number_of_edges(g)))
     edges = nx.edges(g)
@@ -193,14 +201,15 @@ def draw_hex_circles(g, uni_radius):
     image.show()
 
 
-uni_size = 35
-density = 3.5
+if __name__ == "__main__":
+    uni_size = 35
+    density = 3.5
 
 
-uni = gen_hex_center(uni_size)
-remove_warps(uni)
-draw_hex_circles(uni, uni_size)
+    uni = gen_hex_center(uni_size)
+    remove_warps(uni, density)
+    draw_hex_circles(uni, uni_size)
 
-#nx.draw_networkx(g, node_size=40)
-#pyplot.show()
-# draw_networkx(g)
+    #nx.draw_networkx(g, node_size=40)
+    #pyplot.show()
+    # draw_networkx(g)
