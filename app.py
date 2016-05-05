@@ -1,10 +1,12 @@
 import math
 
 import kivy
+from kivy.core.image import Image
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.widget import Widget
+from pytw.moves import ShipMoves
 
-from pytw.planet import Game
+from pytw.planet import Galaxy
 
 
 kivy.require('1.9.0')
@@ -36,12 +38,18 @@ class Universe(FloatLayout):
         # listen to size and position changes
         self.bind(pos=update_rect, size=update_rect)
 
-        self.game = Game(1, "foo", 6)
+        self.game = Galaxy(1, "foo", 5)
         self.game.start()
         self.player = self.game.add_player("Bob")
+        self.moves = ShipMoves(self.player, self.game)
+        ship_image = Image("assets/merchant_cruiser.gif")
+        stars_image = Image("assets/stars.jpg")
 
         def draw_uni(*args):
             with self.canvas.before:
+                Rectangle(pos=self.pos, size=self.size, texture=stars_image.texture)
+
+            with self.canvas:
                 Color(.3, .3, .3, mode='hsv')
                 size = 70
                 centerx = int(size * self.game.diameter + size)
@@ -71,6 +79,10 @@ class Universe(FloatLayout):
                             disabled = True
                             Color(.2, .5, .2)
                     Ellipse(pos=(x - size/2, y - size/2), size=(size, size))
+                    if sector.ships:
+                        Color(.6, .2, .3)
+                        Rectangle(texture=ship_image.texture, pos=(x - size/4, y - size/4), size=(int(size/2), int(size/2)))
+
                     Color(0, 0, 0, mode='hsv')
                     # noinspection PyArgumentList
                     Line(circle=(x, y, size/2))
@@ -79,7 +91,7 @@ class Universe(FloatLayout):
 
                     def btn_clicked(instance):
                         value = instance.text
-                        self.player.visit_sector(value)
+                        self.moves.move_sector(self.player.current_ship_id, int(value))
                         draw_uni()
 
                     btn = Button(pos=(x - size / 2 + ((size - btn_width) / 2), y - size / 2 + ((size - btn_width) / 2)), size=(btn_width, btn_width), size_hint=(None, None), background_normal='', background_color=(.3, .3, .4, .0), text="{}".format(sector.sector_id))

@@ -12,6 +12,7 @@ def gen_hex_center(size):
 
     radius = math.ceil(size / 2)
     for rad in range(radius):
+        print("{}: size: {}".format(rad, len(g.nodes())))
         for q, r in g.nodes():
             g.add_edge((q, r), (q, r - 1))
             g.add_edge((q, r), (q - 1, r))
@@ -54,13 +55,14 @@ def gen_2d_grid(size):
     return g.to_directed()
 
 
-def remove_warps(g, density):
+def remove_warps(g, density, seed):
     target_edge_count = int(g.number_of_nodes() * density)
     print("num: {} : {}".format(target_edge_count, nx.number_of_edges(g)))
+    rnd = random.Random(seed)
     edges = nx.edges(g)
     removed_edges = []
     while len(edges) > target_edge_count:
-        e = random.choice(edges)
+        e = rnd.choice(edges)
         if len(g.neighbors(e[0])) > 1 and len(g.neighbors(e[1])) > 1:
             # print("Removing edge: {}".format(e))
             g.remove_edge(*e)
