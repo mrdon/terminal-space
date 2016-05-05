@@ -1,13 +1,13 @@
 Cython==0.21.2
 decorator==3.4.2
--e git+http://github.com/kivy/kivy@429becaf519e8d2e484d14799586a76f27f8e9bb#egg=Kivy-master
+#-e git+http://github.com/kivy/kivy@429becaf519e8d2e484d14799586a76f27f8e9bb#egg=Kivy-master
 Kivy-Garden==0.1.1
 matplotlib==1.4.3
 networkx==1.9.1
 nose==1.3.7
 numpy==1.9.2
 Pillow==2.9.0
-pygame==1.9.2a0
+#pygame==1.9.2a0
 pyparsing==2.0.3
 python-dateutil==2.4.2
 pytz==2015.4

@@ -1,33 +1,42 @@
-import textwrap
-
 import sys
 
 import re
 
-from pytw.moves import ShipMoves
-from pytw.planet import Galaxy
+from pytw.moves import PlayerPublic, SectorPublic, Events
+from pytw.server import Server
 from termcolor import colored, cprint
 import cmd
 
 
 class TestApp:
     def __init__(self):
-        self.game = Galaxy(1, "foo", 5)
-        self.game.start()
-        self.player = self.game.add_player("Bob")
+        self.server = Server()
+        self.game = GameProcessor()
+        self.actions = self.server.join("Bob", self.game)
+        self.game.actions = self.actions
 
     def run(self):
         cprint("Welcome to PyTW!", 'red', attrs=['bold'])
 
-        GameProcessor(self.game, self.player).cmdloop()
+        self.game.cmdloop()
 
 
-class GameProcessor(cmd.Cmd):
-    def __init__(self, game, player):
-        super().__init__()
-        self.game = game
-        self.player = player
-        self.moves = ShipMoves(self.player, self.game)
+class PlayerClient:
+
+    def __init__(self, player: PlayerPublic):
+        self.id = player.id
+        self.name = player.name
+        self.ship = player.ship
+        self.visited = set(player.visited)
+
+
+class GameProcessor(cmd.Cmd, Events):
+
+    actions = None
+    """: type: pytw.moves.Actions """
+
+    player = None
+    """: type: PlayerClient """
 
     def do_d(self, line):
         self._print_action('Redisplay')
@@ -43,9 +52,10 @@ class GameProcessor(cmd.Cmd):
         print('')
         cprint("<{}>".format(title), 'white', on_color='on_blue', attrs=['bold'])
         print('')
+
     @property
     def prompt(self):
-        sector = self.game.sectors[self.game.ships[self.player.current_ship_id].sector_id]
+        sector = self.player.ship.sector
         return colored('Command [', 'magenta') + \
                 colored('TL', color='yellow', attrs=['bold']) + \
                 colored('=', color='magenta') + \
@@ -53,42 +63,52 @@ class GameProcessor(cmd.Cmd):
                 colored(']', color='magenta') + \
                 colored(':', color='yellow') + \
                 colored('[', color='magenta') + \
-                colored(sector.sector_id, color='cyan', attrs=['bold']) + \
+                colored(sector.id, color='cyan', attrs=['bold']) + \
                 colored('] (', color='magenta') + \
                 colored('?=Help', color='yellow', attrs=['bold']) + \
                 colored(')? : ', color='magenta')
 
     def do_move(self, target_sector):
         self._print_action("Moving to sector {}".format(target_sector))
-        try:
-            self.moves.move_sector(self.player.current_ship_id, int(target_sector))
-            self.print_sector()
-        except ValueError as e:
-            cprint(str(e), 'red')
+        self.actions.move(int(target_sector))
 
-    def print_sector(self):
-        sector = self.game.sectors[self.game.ships[self.player.current_ship_id].sector_id]
+    def on_game_enter(self, player: PlayerPublic):
+        self.player = PlayerClient(player)
+        self.print_sector()
+
+    def on_new_sector(self, sector: SectorPublic):
+        self.player.ship.sector = sector
+        self.player.visited.add(sector.id)
+        self.print_sector()
+
+    def on_invalid_action(self, error: str):
+        cprint(error, 'red')
+
+    def print_sector(self, sector: SectorPublic = None):
+        if not sector:
+            sector = self.player.ship.sector
+
         data = []
         data.append((colored('Sector', 'green', attrs=['bold']), [
             "{} {} {}".format(
-                colored(sector.sector_id, 'cyan', attrs=['bold']),
+                colored(sector.id, 'cyan', attrs=['bold']),
                 colored('in', 'green'),
                 colored('uncharted space', 'blue'))
         ]))
-        if sector.planets:
-            lines = []
-            for planet in sector.planets:
-                lines.append(colored("({}) {}".format(
-                    colored('M', color='yellow', attrs=['bold']),
-                    planet.name)
-                ))
-            data.append((colored('Planets', 'magenta'), lines))
+        # if sector.planets:
+        #     lines = []
+        #     for planet in sector.planets:
+        #         lines.append(colored("({}) {}".format(
+        #             colored('M', color='yellow', attrs=['bold']),
+        #             planet.name)
+        #         ))
+        #     data.append((colored('Planets', 'magenta'), lines))
 
         print_grid(sys.stdout, data, separator=colored(': ', 'yellow'))
 
         warps = []
         for w in sector.warps:
-            if self.player.has_visited(w):
+            if w in self.player.visited:
                 warps.append(colored(w, 'cyan', attrs=['bold']))
             else:
                 warps.append(colored('(', 'magenta') +

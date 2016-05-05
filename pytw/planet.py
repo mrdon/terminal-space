@@ -2,6 +2,7 @@ import random
 from collections import namedtuple
 from datetime import datetime
 import enum
+from typing import List
 
 import networkx
 from pytw.graph import gen_hex_center, remove_warps
@@ -95,6 +96,14 @@ class Player:
         self.ship_id = None
         self.visited_sectors = {}
 
+    @property
+    def sector(self):
+        return self.galaxy.sectors[self.ship.sector_id]
+
+    @property
+    def ship(self):
+        return self.galaxy.ships[self.ship_id]
+
     def has_visited(self, sector_id):
         return sector_id in self.visited_sectors
 
@@ -102,7 +111,10 @@ class Player:
         self.visited_sectors[int(sector_id)] = datetime.now()
 
     def teleport(self, new_ship_id):
-        self.current_ship_id = new_ship_id
+        self.ship_id = new_ship_id
+
+
+
 
 
 ShipTypeArgs = namedtuple("ShipTypeArgs", ["name", "cost", "fighters_max", "fighters_per_wave", "holds_initial",
@@ -151,10 +163,10 @@ class Galaxy:
         sec = self.sectors[1]
         s = Ship(ShipType.MERCHANT_CRUISER, 1, 'Foo', p.player_id, 1)
         self.ships[s.ship_id] = s
+        p.ship_id = s.ship_id
         p.visit_sector(sec.sector_id)
         s.move_sector(sec.sector_id)
         sec.enter_ship(s)
-        p.current_ship_id = 1
 
         p.visit_sector(self.coords_to_id(0, 0))
         self.players[p.player_id] = p
