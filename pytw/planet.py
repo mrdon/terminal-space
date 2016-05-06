@@ -2,10 +2,33 @@ import random
 from collections import namedtuple
 from datetime import datetime
 import enum
+from typing import List
 
 import networkx
 from pytw.graph import gen_hex_center, remove_warps
 
+PORT_NAMES = ["Aegis", "Aeon", "Aeris", "Babylon", "Aeternitas", "Aether", "Alliance", "Alpha", "Amazone", "Ancestor",
+              "Anemone", "Angel", "Anomaly", "Apollo", "Arcadia", "Arcadis", "Arch", "Architect", "Ark", "Artemis",
+              "Asphodel", "Asteria", "Astraeus", "Athena", "Atlas", "Atmos", "Aura", "Aurora", "Awe", "Azura", "Azure",
+              "Baldur", "Beacon", "Blue Moon", "Borealis", "Burrow", "Caelestis", "Canaan", "Century", "Chrono",
+              "Chronos", "Crescent", "Curator", "Curiosity", "Data", "Dawn", "Daydream", "Demeter", "Dogma", "Dream",
+              "Dune", "Ecstacys", "Eir", "Elyse", "Elysium", "Empyrea", "Ender", "Enigma", "Eos", "Epiphany", "Epitome",
+              "Erebus", "Escort", "Eternis", "Eternity", "Exposure", "Fable", "Father", "Fauna", "Felicity", "Flora",
+              "Fortuna", "Frontier", "Gaia", "Galaxy", "Genesis", "Genius", "Glory", "Guardian", "Halo", "Heirloom",
+              "Helios", "Hemera", "Hera", "Heritage", "Hermes", "Horus", "Hymn", "Hyperion", "Hypnos", "Ignis",
+              "Illume", "Inception", "Infinity", "Isis", "Janus", "Juno", "Legacy", "Liberty", "Lore", "Lucent",
+              "Lumina", "Luminous", "Luna", "Lunis", "Magni", "Mammoth", "Mani", "Marvel", "Memento", "Minerva",
+              "Miracle", "Mother", "Muse", "Mystery", "Mythos", "Nebula", "Nemesis", "Nemo", "Neo", "Nero", "Nimbus",
+              "Nott", "Nova", "Novis", "Nox", "Nyx", "Odyssey", "Olympus", "Omega", "Oracle", "Orbital", "Origin",
+              "Orphan", "Osiris", "Outlander", "Parable", "Paradox", "Paragon", "Pedigree", "Phantasm", "Phantom",
+              "Phenomenon", "Phoenix", "Pilgrim", "Pioneer", "Prism", "Prodigy", "Prometheus", "Prophecy", "Proto",
+              "Radiance", "Rebus", "Relic", "Revelation", "Reverie", "Rogue", "Rune", "Saga", "Sancus", "Scout",
+              "Selene", "Serenity", "Settler", "Shangris", "Shepherd", "Shu", "Sol", "Solas", "Spectacle", "Specter",
+              "Spectrum", "Spire", "Symbolica", "Tartarus", "Terminus", "Terra", "Terran", "Terraria", "Themis",
+              "Tiberius", "Titan", "Titanus", "Torus", "Tranquility", "Trivia", "Utopis", "Valhalla", "Vanguard",
+              "Vanquish", "Vesta", "Vestige", "Victoria", "Virtue", "Visage", "Voyage", "Vulcan", "Warden", "Yggdrasil",
+              "Zeus", "Zion"]
+PORT_SUFFIXES = ["", "Station", "Base", "Terminal", "Outpost"] + [str(x) for x in range(0, 9)]
 
 Cost = namedtuple("Cost", ["credits", "fuel_ore", "organics", "equipment", "colonists", "time", "citadel_level_min"])
 
@@ -69,13 +92,35 @@ class Planet:
         self.regions.append(region)
 
 
+class CommodityType(enum.Enum):
+    fuel_ore = 1,
+    organics = 2,
+    equipment = 3
+
+
+class TradingCommodity:
+    def __init__(self, type: CommodityType, amount: int, buying: bool):
+        self.type = type
+        self.amount = amount
+        self.buying = buying
+        self.capacity = amount
+
+
+class Port:
+    def __init__(self, sector_id: int, name: str, commodities: List[TradingCommodity]):
+        self.commodities = commodities
+        self.name = name
+        self.sector_id = sector_id
+
+
 class Sector:
-    def __init__(self, sector_id, coords, warps):
+    def __init__(self, sector_id, coords, warps, port: Port):
         self.sector_id = int(sector_id)
         self.warps = [int(x) for x in warps]
         self.planets = []
         self.ships = []
         self.coords = coords
+        self.port = port
 
     def can_warp(self, sector_id):
         return sector_id in self.warps
@@ -143,7 +188,7 @@ class Ship:
 
 
 class Galaxy:
-    def __init__(self, game_id, name, diameter):
+    def __init__(self, game_id, name, diameter, seed=None):
         self.id = game_id
         self.name = name
         self.diameter = diameter
@@ -152,6 +197,7 @@ class Galaxy:
         self.sector_coords_to_id = {}
         self.players = {}
         self.ships = {}
+        self.seed = seed
         self._graph = None
 
     def add_player(self, name):
@@ -176,10 +222,10 @@ class Galaxy:
 
     def _bang_world(self):
         density = 3.5
-        seed = random.seed()
+        rnd = random.Random(self.seed)
         g = gen_hex_center(self.diameter)
         print("removing warps")
-        remove_warps(g, density, seed)
+        remove_warps(g, density, rnd)
         self._graph = g
 
         self.sector_coords_to_id = networkx.get_node_attributes(g, "sector_id")
@@ -189,7 +235,20 @@ class Galaxy:
         for n in g.nodes_iter():
             warps = [self.coords_to_id(*target) for target in g.neighbors(n)]
             sector_id = self.coords_to_id(*n)
-            self.sectors[sector_id] = Sector(sector_id, n, warps)
+            port = None
+            if rnd.randint(1, 10) > 4:
+                commodities = []
+                for ctype in CommodityType:
+                    buying = bool(rnd.randint(0, 1))
+                    amount = rnd.randint(200, 2000)
+                    commodities.append(TradingCommodity(ctype, amount, buying))
+
+                name = rnd.choice(PORT_NAMES)
+                suffix = rnd.choice(PORT_SUFFIXES)
+                if suffix:
+                    name = " ".join([name, suffix])
+                port = Port(sector_id, name, commodities)
+            self.sectors[sector_id] = Sector(sector_id, n, warps, port)
 
         print("Banged")
 

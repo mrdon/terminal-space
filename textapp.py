@@ -1,4 +1,5 @@
 import cmd
+import enum
 import re
 import sys
 from functools import partial
@@ -6,13 +7,34 @@ from typing import Set, List, Tuple, Callable
 
 from pytw.server import Server
 from pytw.util import methods_to_json, call_type
-from termcolor import colored, cprint
+from termcolor import colored
+
+
+class ConsoleOutput:
+    def __init__(self):
+        self.out = sys.stdout
+
+    def write(self, text):
+        self.out.write(text)
+
+    def print(self, text, color=None, on_color=None, attrs=None):
+        self.out.write(colored(text, color=color, on_color=on_color, attrs=attrs))
+
+    def nl(self):
+        self.out.write('\n')
+
+    def error(self, msg):
+        self.nl()
+        self.print(msg, 'red')
+        self.nl()
+        self.nl()
 
 
 class TestApp:
     def __init__(self):
-        self.server = Server()
-        self.game = GameProcessor()
+        self.server = Server(seed="test")
+        self.out = ConsoleOutput()
+        self.game = GameProcessor(sys.stdin, self.out)
         events = ClientEvents(self.game)
 
         self.target = self.server.join("Bob", partial(call_type, events))
@@ -20,13 +42,68 @@ class TestApp:
         self.game.actions = actions
 
     def run(self):
-        cprint("Welcome to PyTW!", 'red', attrs=['bold'])
+        self.out.print("Welcome to PyTW!", 'red', attrs=['bold'])
 
         self.game.cmdloop()
 
 
+class TradingCommodityClient:
+    def __init__(self, type: str, buying: bool, amount: int, capacity: int):
+        self.capacity = capacity
+        self.amount = amount
+        self.buying = buying
+        self.type = CommodityType[type]
+
+
+class CommodityType(enum.Enum):
+    fuel_ore = 1,
+    organics = 2,
+    equipment = 3
+
+
+class PortClient:
+
+    CLASSES = {
+        "BBS": 1,
+        "BSB": 2,
+        "SBB": 3,
+        "SSB": 4,
+        "SBS": 5,
+        "BSS": 6,
+        "SSS": 7,
+        "BBB": 8
+    }
+
+    def __init__(self, sector_id: int, name: str, commodities: List[TradingCommodityClient]):
+        self.commodities = commodities
+        self.name = name
+        self.sector_id = sector_id
+
+    @property
+    def class_name(self):
+        c = {c.type: c.buying for c in self.commodities}
+
+        name = []
+        for ctype in CommodityType:
+            name.append("B" if c[ctype] else "S")
+
+        return "".join(name)
+
+    @property
+    def class_name_colored(self):
+        line = []
+        for c in self.class_name:
+            line.append(colored(c, 'cyan', attrs=['bold']) if c == 'B' else colored(c, 'green'))
+        return "".join(line)
+
+    @property
+    def class_number(self):
+        return self.CLASSES[self.class_name]
+
+
 class SectorClient:
-    def __init__(self, id: int, coords: Tuple[int, int], warps: List[int]):
+    def __init__(self, id: int, coords: Tuple[int, int], warps: List[int], port: PortClient):
+        self.port = port
         self.warps = warps
         self.coords = coords
         self.id = id
@@ -53,8 +130,11 @@ class PlayerClient:
 class GameProcessor(cmd.Cmd):
 
     actions = None  # type: ClientActions
-
     player = None  # type: PlayerClient
+
+    def __init__(self, stdin, stdout: ConsoleOutput):
+        super().__init__(stdout=stdout, stdin=stdin)
+        self.out = stdout
 
     def do_d(self, line):
         self._print_action('Redisplay')
@@ -67,9 +147,9 @@ class GameProcessor(cmd.Cmd):
         self.do_move(line)
 
     def _print_action(self, title):
-        print('')
-        cprint("<{}>".format(title), 'white', on_color='on_blue', attrs=['bold'])
-        print('')
+        self.out.nl()
+        self.out.print("<{}>".format(title), 'white', on_color='on_blue', attrs=['bold'])
+        self.out.nl()
 
     @property
     def prompt(self):
@@ -87,8 +167,13 @@ class GameProcessor(cmd.Cmd):
                 colored(')? : ', color='magenta')
 
     def do_move(self, target_sector):
-        self._print_action("Moving to sector {}".format(target_sector))
-        self.actions.move_trader(sector_id=int(target_sector))
+        try:
+            target_id = int(target_sector)
+        except ValueError:
+            self.out.error("Invalid sector number")
+            return
+        self._print_action("Moving to sector {}".format(target_id))
+        self.actions.move_trader(sector_id=target_id)
 
     def print_sector(self, sector: SectorClient = None):
         if not sector:
@@ -110,7 +195,21 @@ class GameProcessor(cmd.Cmd):
         #         ))
         #     data.append((colored('Planets', 'magenta'), lines))
 
-        print_grid(sys.stdout, data, separator=colored(': ', 'yellow'))
+        if sector.port:
+            p = sector.port
+            data.append((colored('Port', 'magenta'), [
+                "".join([colored(p.name, 'cyan', attrs=['bold']),
+                         colored(", ", 'yellow'),
+                         colored('Class ', 'magenta'),
+                         colored(p.class_number, 'cyan', attrs=['bold']),
+                         colored(' (', 'magenta'),
+                         p.class_name_colored,
+                         colored(')', 'magenta')])
+
+
+            ]))
+
+        print_grid(self.out, data, separator=colored(': ', 'yellow'))
 
         warps = []
         for w in sector.warps:
@@ -122,8 +221,8 @@ class GameProcessor(cmd.Cmd):
                              colored(')', 'magenta'))
 
         data = [(colored("Warps to Sector(s)", 'green', attrs=['bold']), [colored(" - ", 'green').join(warps)])]
-        print_grid(sys.stdout, data, separator=colored(': ', 'yellow'))
-        sys.stdout.write('\n')
+        print_grid(self.out, data, separator=colored(': ', 'yellow'))
+        self.out.nl()
 
     def do_EOF(self, line):
         return True
@@ -144,7 +243,7 @@ class ClientEvents:
 
     # noinspection PyMethodMayBeStatic
     def on_invalid_action(self, error: str):
-        cprint(error, 'red')
+        self.game.out.error(error)
 
 
 @methods_to_json()

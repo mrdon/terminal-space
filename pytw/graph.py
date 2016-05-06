@@ -55,10 +55,9 @@ def gen_2d_grid(size):
     return g.to_directed()
 
 
-def remove_warps(g, density, seed):
+def remove_warps(g, density, rnd: random.Random):
     target_edge_count = int(g.number_of_nodes() * density)
     print("num: {} : {}".format(target_edge_count, nx.number_of_edges(g)))
-    rnd = random.Random(seed)
     edges = nx.edges(g)
     removed_edges = []
     while len(edges) > target_edge_count:

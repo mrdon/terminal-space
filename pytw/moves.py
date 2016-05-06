@@ -1,6 +1,6 @@
 from typing import Callable
 
-from pytw.planet import Galaxy, Player, Sector, Ship
+from pytw.planet import Galaxy, Player, Sector, Ship, Port, TradingCommodity
 from pytw.util import methods_to_json
 
 
@@ -20,11 +20,27 @@ class ShipPublic:
         self.sector = SectorPublic(sector)
 
 
+class TradingCommodityPublic:
+    def __init__(self, commodity: TradingCommodity):
+        self.amount = commodity.amount
+        self.capacity = commodity.capacity
+        self.buying = commodity.buying
+        self.type = commodity.type.name
+
+
+class PortPublic:
+    def __init__(self, port: Port):
+        self.name = port.name
+        self.sector_id = port.sector_id
+        self.commodities = [TradingCommodityPublic(c) for c in port.commodities]
+
+
 class SectorPublic:
     def __init__(self, sector: Sector):
         self.id = sector.sector_id
         self.coords = sector.coords
         self.warps = sector.warps
+        self.port = None if not sector.port else PortPublic(sector.port)
         self.traders = None  # todo
         self.ships = None  # todo
 
@@ -55,6 +71,10 @@ class ShipMoves:
         self.events.on_game_enter(player=PlayerPublic(player))
 
     def move_sector(self, target_sector_id):
+        if target_sector_id not in self.galaxy.sectors:
+            self.events.on_invalid_action(error="Not a valid sector number")
+            return
+
         target = self.galaxy.sectors[target_sector_id]
         ship = self.galaxy.ships[self.player.ship_id]
         ship_sector = self.galaxy.sectors[ship.sector_id]

@@ -26,6 +26,7 @@ def methods_to_json(sink_property='target'):
 
 
 def call_type(obj, data):
+    print("received: {}".format(data))
     event = json.loads(data)
     event_type = event['type']
     func = getattr(obj, event_type)

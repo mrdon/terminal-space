@@ -7,8 +7,8 @@ from pytw.util import call_type
 
 
 class Server:
-    def __init__(self):
-        self.game = Galaxy(1, "foo", 5)
+    def __init__(self, seed=None):
+        self.game = Galaxy(1, "foo", 5, seed=seed)
         self.game.start()
 
     def join(self, name, callback: Callable[[str], None]) -> Callable[[str], None]:
