@@ -2,7 +2,6 @@ import random
 from collections import namedtuple
 from datetime import datetime
 import enum
-from typing import List
 
 import networkx
 from pytw.graph import gen_hex_center, remove_warps
@@ -112,9 +111,6 @@ class Player:
 
     def teleport(self, new_ship_id):
         self.ship_id = new_ship_id
-
-
-
 
 
 ShipTypeArgs = namedtuple("ShipTypeArgs", ["name", "cost", "fighters_max", "fighters_per_wave", "holds_initial",

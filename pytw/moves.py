@@ -1,6 +1,7 @@
-import json
+from typing import Callable
 
 from pytw.planet import Galaxy, Player, Sector, Ship
+from pytw.util import methods_to_json
 
 
 class PlayerPublic:
@@ -28,7 +29,11 @@ class SectorPublic:
         self.ships = None  # todo
 
 
-class Events:
+@methods_to_json()
+class ServerEvents:
+    def __init__(self, target: Callable[[str], None]):
+        self.target = target
+
     def on_game_enter(self, player: PlayerPublic):
         pass
 
@@ -39,70 +44,39 @@ class Events:
         pass
 
 
-class EventLogger:
-    def __init__(self, obj):
-        self.obj = obj
-        self.callable_results = []
-
-    def __getattr__(self, attr):
-        ret = getattr(self.obj, attr)
-        if hasattr(ret, "__call__"):
-            return self.FunctionWrapper(self, ret)
-        return ret
-
-    class FunctionWrapper:
-        def __init__(self, parent, callable):
-            self.parent = parent
-            self.callable = callable
-
-            class MyEncoder(json.JSONEncoder):
-                def default(self, o):
-                    return {k: v for k, v in o.__dict__.items() if v is not None}
-            self.encoder = MyEncoder()
-
-        def __call__(self, *args, **kwargs):
-            print('Calling {} with args: {}'.format(self.callable.__name__, [self.encoder.encode(a) for a in args]))
-            ret = self.callable(*args, **kwargs)
-            return ret
-
-
-class Actions:
-
-    def __init__(self, player: Player, game: Galaxy, events: Events):
-        self.__player = player
-        self.__game = game
-        self.__moves = ShipMoves(player, game, EventLogger(events))
-
-    def move(self, target_id):
-        print("move: {}".format(target_id))
-        ship_id = self.__player.ship_id
-        self.__moves.move_sector(ship_id, target_id)
-
-
 class ShipMoves:
 
-    def __init__(self, player, galaxy: Galaxy, events: Events):
+    def __init__(self, player, galaxy: Galaxy, events: ServerEvents):
         super().__init__()
         self.galaxy = galaxy
         self.player = player
         self.events = events
-        self.events.on_game_enter(PlayerPublic(player))
 
-    def move_sector(self, ship_id, target_sector_id):
+        self.events.on_game_enter(player=PlayerPublic(player))
+
+    def move_sector(self, target_sector_id):
         target = self.galaxy.sectors[target_sector_id]
-        ship = self.galaxy.ships[ship_id]
+        ship = self.galaxy.ships[self.player.ship_id]
         ship_sector = self.galaxy.sectors[ship.sector_id]
 
         if ship.player_id != self.player.player_id:
-            self.events.on_invalid_action("Ship not occupied by player")
+            self.events.on_invalid_action(error="Ship not occupied by player")
             return
 
         if not ship_sector.can_warp(target.sector_id):
-            self.events.on_invalid_action("Target sector not adjacent to ship")
+            self.events.on_invalid_action(error="Target sector not adjacent to ship")
             return
 
         ship_sector.exit_ship(ship)
         target.enter_ship(ship)
         ship.move_sector(target.sector_id)
         self.player.visit_sector(target.sector_id)
-        self.events.on_new_sector(SectorPublic(target))
+        self.events.on_new_sector(sector=SectorPublic(target))
+
+
+class ServerActions:
+    def __init__(self, moves: ShipMoves):
+        self.moves = moves
+
+    def move_trader(self, sector_id: int):
+        self.moves.move_sector(sector_id)

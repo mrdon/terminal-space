@@ -1,3 +1,5 @@
+-e ../json-types
+termcolor
 Cython==0.21.2
 decorator==3.4.2
 #-e git+http://github.com/kivy/kivy@429becaf519e8d2e484d14799586a76f27f8e9bb#egg=Kivy-master

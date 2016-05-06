@@ -1,19 +1,23 @@
-import sys
-
-import re
-
-from pytw.moves import PlayerPublic, SectorPublic, Events
-from pytw.server import Server
-from termcolor import colored, cprint
 import cmd
+import re
+import sys
+from functools import partial
+from typing import Set, List, Tuple, Callable
+
+from pytw.server import Server
+from pytw.util import methods_to_json, call_type
+from termcolor import colored, cprint
 
 
 class TestApp:
     def __init__(self):
         self.server = Server()
         self.game = GameProcessor()
-        self.actions = self.server.join("Bob", self.game)
-        self.game.actions = self.actions
+        events = ClientEvents(self.game)
+
+        self.target = self.server.join("Bob", partial(call_type, events))
+        actions = ClientActions(self.game, self.target)
+        self.game.actions = actions
 
     def run(self):
         cprint("Welcome to PyTW!", 'red', attrs=['bold'])
@@ -21,22 +25,36 @@ class TestApp:
         self.game.cmdloop()
 
 
+class SectorClient:
+    def __init__(self, id: int, coords: Tuple[int, int], warps: List[int]):
+        self.warps = warps
+        self.coords = coords
+        self.id = id
+        self.traders = None  # todo
+        self.ships = None  # todo
+
+
+class ShipClient:
+    def __init__(self, id: int, name: str, sector: SectorClient):
+        self.sector = sector
+        self.name = name
+        self.id = id
+
+
 class PlayerClient:
 
-    def __init__(self, player: PlayerPublic):
-        self.id = player.id
-        self.name = player.name
-        self.ship = player.ship
-        self.visited = set(player.visited)
+    def __init__(self, id: int, name: str, ship: ShipClient, visited: Set[int]):
+        self.visited = visited
+        self.ship = ship
+        self.name = name
+        self.id = id
 
 
-class GameProcessor(cmd.Cmd, Events):
+class GameProcessor(cmd.Cmd):
 
-    actions = None
-    """: type: pytw.moves.Actions """
+    actions = None  # type: ClientActions
 
-    player = None
-    """: type: PlayerClient """
+    player = None  # type: PlayerClient
 
     def do_d(self, line):
         self._print_action('Redisplay')
@@ -70,21 +88,9 @@ class GameProcessor(cmd.Cmd, Events):
 
     def do_move(self, target_sector):
         self._print_action("Moving to sector {}".format(target_sector))
-        self.actions.move(int(target_sector))
+        self.actions.move_trader(sector_id=int(target_sector))
 
-    def on_game_enter(self, player: PlayerPublic):
-        self.player = PlayerClient(player)
-        self.print_sector()
-
-    def on_new_sector(self, sector: SectorPublic):
-        self.player.ship.sector = sector
-        self.player.visited.add(sector.id)
-        self.print_sector()
-
-    def on_invalid_action(self, error: str):
-        cprint(error, 'red')
-
-    def print_sector(self, sector: SectorPublic = None):
+    def print_sector(self, sector: SectorClient = None):
         if not sector:
             sector = self.player.ship.sector
 
@@ -121,6 +127,34 @@ class GameProcessor(cmd.Cmd, Events):
 
     def do_EOF(self, line):
         return True
+
+
+class ClientEvents:
+    def __init__(self, game: GameProcessor):
+        self.game = game
+
+    def on_game_enter(self, player: PlayerClient):
+        self.game.player = player
+        self.game.print_sector()
+
+    def on_new_sector(self, sector: SectorClient):
+        self.game.player.ship.sector = sector
+        self.game.player.visited.add(sector.id)
+        self.game.print_sector()
+
+    # noinspection PyMethodMayBeStatic
+    def on_invalid_action(self, error: str):
+        cprint(error, 'red')
+
+
+@methods_to_json()
+class ClientActions:
+    def __init__(self, game: GameProcessor, server: Callable[[str], None]):
+        self.game = game
+        self.target = server
+
+    def move_trader(self, sector_id: int):
+        pass
 
 
 def print_grid(stream, data, separator):
