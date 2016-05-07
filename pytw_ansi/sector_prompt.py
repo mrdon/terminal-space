@@ -35,6 +35,9 @@ class Prompt(cmd.Cmd):
     def do_p(self, line):
         raise PromptTransition(PromptType.PORT)
 
+    def do_q(self, line):
+        raise PromptTransition(PromptType.QUIT)
+
     def emptyline(self):
         self.do_d('')
 

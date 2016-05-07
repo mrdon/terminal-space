@@ -45,19 +45,19 @@ class Prompt(cmd.Cmd):
         self.out.print("Docking...", color='red', attrs=['blink'])
         self.out.write(Color("""
 
-{hiyellow}Commerce report for {hicyan}{port_name}{hiyellow}: 12:50:33 PM Sat May 06, 2028{/hiyellow}
+{hiyellow}Commerce report for {hicyan}{port_name}{hiyellow}: 12:50:33 PM Sat May 06, 2028
 
-{magenta}-=-=-        Docking Log        -=-=-{/magenta}
+{magenta}-=-=-        Docking Log        -=-=-
 
-{green}No current ship docking log on file.{/green}
+{green}No current ship docking log on file.
 
 """).format(port_name=port.name))
         rows = []
         for c in port.commodities:
-            rows.append([Color("{hicyan}{name}{/hicyan}").format(name=c.type.name.replace('_', ' ').title()),
+            rows.append([Color("{hicyan}{name}").format(name=c.type.name.replace('_', ' ').title()),
                          Color.green("Buying" if c.buying else "Selling"),
-                         Color("{hicyan}{}{/hicyan}").format(c.amount),
-                         Color("{green}{}{red}%{/red}").format(int(c.amount / c.capacity)),
+                         Color("{hicyan}{}").format(c.amount),
+                         Color("{green}{}{red}%").format(int(c.amount / c.capacity)),
                          Color.cyan('0')])
 
         self.out.write(tabulate(

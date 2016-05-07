@@ -33,6 +33,8 @@ class Session:
                     prompt = self.start_sector_prompt(action_sink)
                 elif e.next == PromptType.PORT:
                     prompt = self.start_port_prompt(action_sink)
+                elif e.next == PromptType.QUIT:
+                    exit(0)
 
     def on_game_enter(self, player: PlayerClient):
         self.player = player
