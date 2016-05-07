@@ -5,6 +5,7 @@ import enum
 from typing import List
 
 import networkx
+from pytw.config import GameConfig
 from pytw.graph import gen_hex_center, remove_warps
 
 PORT_NAMES = ["Aegis", "Aeon", "Aeris", "Babylon", "Aeternitas", "Aether", "Alliance", "Alpha", "Amazone", "Ancestor",
@@ -106,7 +107,52 @@ class TradingCommodity:
         self.capacity = amount
 
 
+class PortClass(enum.Enum):
+    BBS = (1, True, True, False)
+    BSB = (2, True, False, True)
+    SBB = (3, False, True, True)
+    SSB = (4, False, False, True)
+    SBS = (5, False, True, False)
+    BSS = (6, True, False, False)
+    SSS = (7, False, False, False)
+    BBB = (8, True, True, True)
+
+    # noinspection PyInitNewSignature
+    def __init__(self, id, buying_fuel_ore, buying_organics, buying_equipment):
+        self.id = id
+        self.buying = {
+            CommodityType.fuel_ore: buying_fuel_ore,
+            CommodityType.organics: buying_organics,
+            CommodityType.equipment: buying_equipment
+        }
+
+    @classmethod
+    def by_id(cls, id: int):
+        return next(e for e in cls if e.id == id)
+
+
+def random_port_type(rnd: random.Random) -> PortClass:
+    type_chance = rnd.randint(0, 99)
+    if type_chance < 20:
+        return PortClass.by_id(1)
+    elif type_chance < 40:
+        return PortClass.by_id(2)
+    elif type_chance < 60:
+        return PortClass.by_id(3)
+    elif type_chance < 70:
+        return PortClass.by_id(4)
+    elif type_chance < 80:
+        return PortClass.by_id(5)
+    elif type_chance < 90:
+        return PortClass.by_id(6)
+    elif type_chance < 95:
+        return PortClass.by_id(7)
+    else:
+        return PortClass.by_id(8)
+
+
 class Port:
+
     def __init__(self, sector_id: int, name: str, commodities: List[TradingCommodity]):
         self.commodities = commodities
         self.name = name
@@ -188,16 +234,15 @@ class Ship:
 
 
 class Galaxy:
-    def __init__(self, game_id, name, diameter, seed=None):
-        self.id = game_id
-        self.name = name
-        self.diameter = diameter
+    def __init__(self, config: GameConfig):
+        self.config = config
+        self.id = config.id
+        self.name = config.name
 
         self.sectors = {}
         self.sector_coords_to_id = {}
         self.players = {}
         self.ships = {}
-        self.seed = seed
         self._graph = None
 
     def add_player(self, name):
@@ -222,8 +267,8 @@ class Galaxy:
 
     def _bang_world(self):
         density = 3.5
-        rnd = random.Random(self.seed)
-        g = gen_hex_center(self.diameter)
+        rnd = random.Random(self.config.seed)
+        g = gen_hex_center(self.config.diameter)
         print("removing warps")
         remove_warps(g, density, rnd)
         self._graph = g
@@ -236,10 +281,13 @@ class Galaxy:
             warps = [self.coords_to_id(*target) for target in g.neighbors(n)]
             sector_id = self.coords_to_id(*n)
             port = None
-            if rnd.randint(1, 10) > 4:
+            if rnd.randint(1, 100) >= self.config.port_config.density:
                 commodities = []
+
+                ptype = random_port_type(rnd)
+
                 for ctype in CommodityType:
-                    buying = bool(rnd.randint(0, 1))
+                    buying = ptype.buying[ctype]
                     amount = rnd.randint(200, 2000)
                     commodities.append(TradingCommodity(ctype, amount, buying))
 
