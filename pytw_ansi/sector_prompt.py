@@ -1,6 +1,7 @@
 import cmd
 from typing import Callable
 
+from colorclass import Color
 from pytw.util import methods_to_json
 from pytw_ansi.models import *
 from pytw_ansi.prompts import PromptType, PromptTransition
@@ -64,7 +65,9 @@ class Prompt(cmd.Cmd):
         except ValueError:
             self.out.error("Invalid sector number")
             return
-        print_action(self.out, "Moving to sector {}".format(target_id))
+        print_action(self.out, "Move")
+        self.out.write(Color("{magenta}Warping to Sector {hiyellow}{}{/hiyellow}").format(target_id))
+        self.out.nl(2)
         self.actions.move_trader(sector_id=target_id)
 
     def print_sector(self, sector: SectorClient = None):

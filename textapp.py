@@ -18,6 +18,4 @@ class TestApp:
 
 
 if __name__ == '__main__':
-    import colorclass
-    print("foo", colorclass.list_tags())
     TestApp().run()
