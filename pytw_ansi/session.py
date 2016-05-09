@@ -41,7 +41,7 @@ class Session:
 
     def start_sector_prompt(self, action_sink: Callable[[str], None]):
         actions = sector_prompt.Actions(action_sink)
-        prompt = sector_prompt.Prompt(self.player, actions, self.term)
+        prompt = sector_prompt.Prompt(self.player, actions, term=self.term)
         events = sector_prompt.Events(prompt)
         self.event_caller.target = events
         return prompt

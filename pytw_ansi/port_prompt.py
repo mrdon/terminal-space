@@ -25,6 +25,7 @@ class Prompt(cmd.Cmd):
     def __init__(self, player: PlayerClient, actions: Actions, term: Terminal):
         super().__init__(stdout=term.out, stdin=term.stdin)
         self.out = term
+        self.use_rawinput = False
         self.player = player
         self.actions = actions
 
