@@ -266,17 +266,14 @@ class Galaxy:
         return self.sector_coords_to_id[(x, y)]
 
     def _bang_world(self):
-        density = 3.5
         rnd = random.Random(self.config.seed)
         g = gen_hex_center(self.config.diameter)
-        print("removing warps")
-        remove_warps(g, density, rnd)
+        remove_warps(g, self.config.warp_density, rnd)
         self._graph = g
 
         self.sector_coords_to_id = networkx.get_node_attributes(g, "sector_id")
         self.sector_coords_to_id[(0, 0)] = 1
 
-        print("building sectors")
         for n in g.nodes_iter():
             warps = [self.coords_to_id(*target) for target in g.neighbors(n)]
             sector_id = self.coords_to_id(*n)
@@ -297,8 +294,6 @@ class Galaxy:
                     name = " ".join([name, suffix])
                 port = Port(sector_id, name, commodities)
             self.sectors[sector_id] = Sector(sector_id, n, warps, port)
-
-        print("Banged")
 
     def start(self):
         self._bang_world()

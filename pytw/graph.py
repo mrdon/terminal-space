@@ -12,7 +12,6 @@ def gen_hex_center(size):
 
     radius = math.ceil(size / 2)
     for rad in range(radius):
-        print("{}: size: {}".format(rad, len(g.nodes())))
         for q, r in g.nodes():
             g.add_edge((q, r), (q, r - 1))
             g.add_edge((q, r), (q - 1, r))
@@ -20,8 +19,6 @@ def gen_hex_center(size):
             g.add_edge((q, r), (q, r + 1))
             g.add_edge((q, r), (q + 1, r - 1))
             g.add_edge((q, r), (q + 1, r))
-
-    print("radius: {}".format(radius))
 
     for x in range(radius):
         g.add_edge((x * -1, radius), (x * -1 - 1, radius))
@@ -57,7 +54,6 @@ def gen_2d_grid(size):
 
 def remove_warps(g, density, rnd: random.Random):
     target_edge_count = int(g.number_of_nodes() * density)
-    print("num: {} : {}".format(target_edge_count, nx.number_of_edges(g)))
     edges = nx.edges(g)
     removed_edges = []
     while len(edges) > target_edge_count:
@@ -72,17 +68,13 @@ def remove_warps(g, density, rnd: random.Random):
             removed_edges += [e, other]
             # print("Removing edge: {} : {}".format(e, other))
 
-    print("calculating from base")
-
     while True:
-        print("pass ----------- ")
         connected = True
         for n in g.nodes_iter():
             try:
                 shortest_path_length(g, source=(0, 0), target=n)
             except nx.exception.NetworkXNoPath:
                 connected = False
-                print('no path {}, adding back'.format(n))
                 for e in list(removed_edges):
                     src, target = e
                     if target == n:
@@ -92,7 +84,6 @@ def remove_warps(g, density, rnd: random.Random):
                             shortest_path_length(g, source=(0, 0), target=n)
                             removed_edges.remove((src, target))
                             removed_edges.remove((target, src))
-                            print("Added back {}".format((src, target)))
                             break
                         except nx.exception.NetworkXNoPath:
                             g.remove_edge(src, target)
@@ -100,7 +91,6 @@ def remove_warps(g, density, rnd: random.Random):
         if connected:
             break
 
-    print("double checking")
     warps = [0] * 7
     for n in g.nodes_iter():
         try:
@@ -110,10 +100,10 @@ def remove_warps(g, density, rnd: random.Random):
             raise Exception("bad")
 
     nodes_len = g.number_of_nodes()
-    print("Warps:")
-    for ind, num in enumerate(warps):
-        print(" {} - {}%".format(ind, int((num / nodes_len) * 100)))
-    print('Done')
+    # print("Warps:")
+    # for ind, num in enumerate(warps):
+    #     print(" {} - {}%".format(ind, int((num / nodes_len) * 100)))
+    # print('Done')
 
 
 def draw_hex_grid(g):
@@ -189,7 +179,6 @@ def draw_hex_circles(g, uni_radius):
     for e in g.edges_iter():
         src, target = e
         draw.line((node_to_pixel(src), node_to_pixel(target)), fill='blue', width=1)
-    print("nodes num: {}".format(g.number_of_nodes()))
     for n in g.nodes_iter():
         col, row = n
         col_offset = 0 if row == 0 else math.fabs(row) * size * (math.fabs(row) / row)
