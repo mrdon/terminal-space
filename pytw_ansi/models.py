@@ -1,11 +1,13 @@
 import enum
-from typing import Tuple, List, Set
+from collections import defaultdict
+from typing import Tuple, List, Set, Dict
 
 from termcolor import colored
 
 
 class TradingCommodityClient:
-    def __init__(self, type: str, buying: bool, amount: int, capacity: int):
+    def __init__(self, type: str, buying: bool, amount: int, capacity: int, price: int):
+        self.price = price
         self.capacity = capacity
         self.amount = amount
         self.buying = buying
@@ -13,9 +15,9 @@ class TradingCommodityClient:
 
 
 class CommodityType(enum.Enum):
-    fuel_ore = 1,
-    organics = 2,
-    equipment = 3
+    fuel_ore = "Fuel Ore"
+    organics = "Organics"
+    equipment = "Equipment"
 
 
 class PortClient:
@@ -69,16 +71,28 @@ class SectorClient:
 
 
 class ShipClient:
-    def __init__(self, id: int, name: str, sector: SectorClient):
+    def __init__(self, id: int, name: str, holds_capacity: int, holds: Dict[str, int], sector: SectorClient):
+        self.holds_capacity = holds_capacity
+        self.holds = defaultdict(lambda: 0)
+        self.holds.update({CommodityType[k]: v for k, v in holds.items()})
         self.sector = sector
         self.name = name
         self.id = id
 
+    @property
+    def holds_free(self):
+        return self.holds_capacity - sum(self.holds.values())
+
 
 class PlayerClient:
 
-    def __init__(self, id: int, name: str, ship: ShipClient, visited: Set[int]):
+    def __init__(self, id: int, name: str, credits: int, ship: ShipClient, visited: Set[int]):
+        self.credits = credits
         self.visited = visited
         self.ship = ship
         self.name = name
         self.id = id
+
+    def update(self, player):
+        self.credits = player.credits
+        self.ship = player.ship

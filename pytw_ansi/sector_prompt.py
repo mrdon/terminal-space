@@ -5,7 +5,7 @@ from colorclass import Color
 from pytw.util import methods_to_json
 from pytw_ansi.models import *
 from pytw_ansi.prompts import PromptType, PromptTransition
-from pytw_ansi.stream import TerminalOutput, print_grid, print_action
+from pytw_ansi.stream import Terminal, print_grid, print_action
 from termcolor import colored
 
 
@@ -20,9 +20,9 @@ class Actions:
 
 # noinspection PyMethodMayBeStatic,PyIncorrectDocstring
 class Prompt(cmd.Cmd):
-    def __init__(self, player: PlayerClient, actions: Actions, stdin, stdout: TerminalOutput):
-        super().__init__(stdout=stdout, stdin=stdin)
-        self.out = stdout
+    def __init__(self, player: PlayerClient, actions: Actions, term: Terminal):
+        super().__init__(stdout=term.out, stdin=term.stdin)
+        self.out = term
         self.player = player
         self.actions = actions
 

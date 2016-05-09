@@ -1,10 +1,9 @@
-from functools import partial
 from typing import Callable
 
 from pytw.config import GameConfig
-from pytw.moves import ShipMoves, ServerEvents, ServerActions
+from pytw.moves import ShipMoves, ServerEvents
 from pytw.planet import Galaxy
-from pytw.util import call_type, CallMethodOnEventType
+from pytw.util import CallMethodOnEventType
 
 
 class Server:
@@ -19,4 +18,4 @@ class Server:
         events = ServerEvents(callback)
         moves = ShipMoves(player, self.game, events)
         prefix = None if not self.config.debug_network else "IN "
-        return CallMethodOnEventType(ServerActions(moves), prefix=prefix)
+        return CallMethodOnEventType(moves, prefix=prefix)

@@ -2,11 +2,12 @@ import random
 from collections import namedtuple
 from datetime import datetime
 import enum
-from typing import List
+from typing import List, Dict
 
 import networkx
 from pytw.config import GameConfig
 from pytw.graph import gen_hex_center, remove_warps
+from pytw.util import AutoIdDict
 
 PORT_NAMES = ["Aegis", "Aeon", "Aeris", "Babylon", "Aeternitas", "Aether", "Alliance", "Alpha", "Amazone", "Ancestor",
               "Anemone", "Angel", "Anomaly", "Apollo", "Arcadia", "Arcadis", "Arch", "Architect", "Ark", "Artemis",
@@ -94,9 +95,15 @@ class Planet:
 
 
 class CommodityType(enum.Enum):
-    fuel_ore = 1,
-    organics = 2,
-    equipment = 3
+    fuel_ore = ("Fuel Ore", 1, 1.5)
+    organics = ("Organics", 2, 3)
+    equipment = ("Equipment", 4, 6)
+
+    # noinspection PyInitNewSignature
+    def __init__(self, title, sell_cost, buy_cost):
+        self.title = title
+        self.sell_cost = sell_cost
+        self.buy_offer = buy_cost
 
 
 class TradingCommodity:
@@ -105,6 +112,13 @@ class TradingCommodity:
         self.amount = amount
         self.buying = buying
         self.capacity = amount
+
+    @property
+    def price(self):
+        if self.buying:
+            return round(self.type.buy_offer + ((self.amount / self.capacity) * self.type.buy_offer) / 2, 2)
+        else:
+            return round(self.type.sell_cost - ((self.amount / self.capacity) * self.type.sell_cost) / 2, 2)
 
 
 class PortClass(enum.Enum):
@@ -158,10 +172,13 @@ class Port:
         self.name = name
         self.sector_id = sector_id
 
+    def commodity(self, type: CommodityType):
+        return next(c for c in self.commodities if c.type == type)
+
 
 class Sector:
-    def __init__(self, sector_id, coords, warps, port: Port):
-        self.sector_id = int(sector_id)
+    def __init__(self, id, coords, warps, port: Port):
+        self.id = int(id)
         self.warps = [int(x) for x in warps]
         self.planets = []
         self.ships = []
@@ -172,17 +189,18 @@ class Sector:
         return sector_id in self.warps
 
     def exit_ship(self, ship):
-        self.ships.remove(ship.ship_id)
+        self.ships.remove(ship.id)
 
     def enter_ship(self, ship):
-        self.ships.append(ship.ship_id)
+        self.ships.append(ship.id)
 
 
 class Player:
-    def __init__(self, game, player_id, name):
+    def __init__(self, game, name: str, credits: int):
         self.name = name
-        self.player_id = player_id
+        self.id = 0
         self.galaxy = game
+        self.credits = credits
         self.ship_id = None
         self.visited_sectors = {}
 
@@ -213,7 +231,7 @@ class ShipType(ShipTypeArgs, enum.Enum):
                                     cost=41300,
                                     fighters_max=2500,
                                     fighters_per_wave=750,
-                                    holds_initial=20,
+                                    holds_initial=200,
                                     holds_max=75,
                                     warp_cost=2,
                                     offensive_odds=1,
@@ -221,16 +239,28 @@ class ShipType(ShipTypeArgs, enum.Enum):
 
 
 class Ship:
-    def __init__(self, ship_type, ship_id, name, player_id, sector_id):
+    def __init__(self, ship_type: ShipType, name: str, player_id: int, sector_id: int):
+        self.id = 0
         self.name = name
-        self.ship_id = ship_id
         self.player_owner_id = player_id
         self.player_id = player_id
+        self.holds_capacity = ship_type.holds_initial
+        self.holds = {}  # type: Dict[CommodityType: int]
         self.ship_type = ship_type
         self.sector_id = sector_id
 
     def move_sector(self, sector_id):
         self.sector_id = sector_id
+
+    def add_to_holds(self, commodity_type: CommodityType, amount: int):
+        self.holds[commodity_type] = self.holds.get(commodity_type, 0) + amount
+
+    @property
+    def holds_free(self):
+        return self.holds_capacity - sum(self.holds.values())
+
+    def remove_from_holds(self, commodity_type: CommodityType, amount: int):
+        self.holds[commodity_type] -= amount
 
 
 class Galaxy:
@@ -239,24 +269,23 @@ class Galaxy:
         self.id = config.id
         self.name = config.name
 
-        self.sectors = {}
+        self.sectors = AutoIdDict()
         self.sector_coords_to_id = {}
-        self.players = {}
-        self.ships = {}
+        self.players = AutoIdDict()
+        self.ships = AutoIdDict()
         self._graph = None
 
     def add_player(self, name):
-        p = Player(self, 1, name)
-        sec = self.sectors[1]
-        s = Ship(ShipType.MERCHANT_CRUISER, 1, 'Foo', p.player_id, 1)
-        self.ships[s.ship_id] = s
-        p.ship_id = s.ship_id
-        p.visit_sector(sec.sector_id)
-        s.move_sector(sec.sector_id)
+        p = self.players.append(Player(self, name, credits=self.config.player.initial_credits))
+        sec = self.sectors[self.config.player.initial_sector_id]
+        ship_type = ShipType[self.config.player.initial_ship_type.upper()]
+        s = self.ships.append(Ship(ship_type, 'Foo', player_id=p.id, sector_id=sec.id))
+        p.ship_id = s.id
+        p.visit_sector(sec.id)
+        s.move_sector(sec.id)
         sec.enter_ship(s)
 
         p.visit_sector(self.coords_to_id(0, 0))
-        self.players[p.player_id] = p
         return p
 
     def id_to_coords(self, sector_id):
@@ -278,7 +307,7 @@ class Galaxy:
             warps = [self.coords_to_id(*target) for target in g.neighbors(n)]
             sector_id = self.coords_to_id(*n)
             port = None
-            if rnd.randint(1, 100) >= self.config.port_config.density:
+            if rnd.randint(1, 100) >= self.config.port.density:
                 commodities = []
 
                 ptype = random_port_type(rnd)
