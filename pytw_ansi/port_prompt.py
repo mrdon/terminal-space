@@ -76,6 +76,7 @@ class Prompt(cmd.Cmd):
         self.out.nl(2)
 
 
+
         # self.out.print(" Items     Status  Trading % of max OnBoard", 'green')
         # self.out.nl()
         # self.out.print(" -----     ------  ------- -------- -------", 'magenta')

@@ -18,6 +18,7 @@ class Actions:
         pass
 
 
+# noinspection PyMethodMayBeStatic,PyIncorrectDocstring
 class Prompt(cmd.Cmd):
     def __init__(self, player: PlayerClient, actions: Actions, stdin, stdout: TerminalOutput):
         super().__init__(stdout=stdout, stdin=stdin)
@@ -25,6 +26,7 @@ class Prompt(cmd.Cmd):
         self.player = player
         self.actions = actions
 
+    # noinspection PyUnusedLocal
     def do_d(self, line):
         """
         Re-display the current sector
@@ -77,13 +79,12 @@ class Prompt(cmd.Cmd):
         if not sector:
             sector = self.player.ship.sector
 
-        data = []
-        data.append((colored('Sector', 'green', attrs=['bold']), [
+        data = [(colored('Sector', 'green', attrs=['bold']), [
             "{} {} {}".format(
                     colored(sector.id, 'cyan', attrs=['bold']),
                     colored('in', 'green'),
                     colored('uncharted space', 'blue'))
-        ]))
+        ])]
         # if sector.planets:
         #     lines = []
         #     for planet in sector.planets:
@@ -138,4 +139,3 @@ class Events:
     # noinspection PyMethodMayBeStatic
     def on_invalid_action(self, error: str):
         self.prompt.out.error(error)
-
