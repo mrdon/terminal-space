@@ -52,7 +52,7 @@ class PortClient:
     def class_name_colored(self):
         line = []
         for c in self.class_name:
-            line.append(colored(c, 'cyan', attrs=['bold']) if c == 'B' else colored(c, 'green'))
+            line.append(colored(c, 'cyan') if c == 'B' else colored(c, 'green'))
         return "".join(line)
 
     @property

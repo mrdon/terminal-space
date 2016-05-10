@@ -1,6 +1,9 @@
+import inspect
 import re
 import sys
-from typing import Tuple
+from collections import namedtuple
+from types import FunctionType, MethodType
+from typing import Tuple, NamedTuple, Callable
 
 from colorclass import Color
 from termcolor import colored
@@ -51,27 +54,82 @@ def print_grid(stream: Terminal, data, separator):
 
 
 def print_action(stream: Terminal, title):
-        stream.nl()
-        stream.print("<{}>".format(title), 'white', on_color='on_blue', attrs=['bold'])
-        stream.nl(2)
+    stream.nl()
+    stream.print(Color("{bgblue}{white}<{}>{/bgblue}{/white}").format(title))
+    stream.nl(2)
 
 
-def print_menu(stream: Terminal, default: str, options: Tuple[Tuple[str, str]]):
+Option = NamedTuple('Option', [('key', str), ('description', str), ('function', Callable[[], None])])
+
+
+class SimpleMenuCmd:
+
+    def __init__(self, stream: Terminal, default: str, option_order: Tuple[str]):
+        self.stream = stream
+        self.default = default
+        self.options = {}
+
+        for key in option_order:
+            key = key.lower()
+            fn = getattr(self, "do_{}".format(key))
+            self.options[key] = Option(key=key, description=fn.__doc__.strip(), function=fn)
+
+    def cmdloop(self):
+        self.stream.nl()
+        for opt in self.options.values():
+            self.stream.write(Color("{magenta}<{/magenta}{green}{cmd}{/green}{magenta}>{/magenta} "
+                                    "{green}{text}{/green}").format(
+                    cmd=opt.key.upper(),
+                    text=opt.description
+            ))
+            self.stream.nl()
+        self.stream.nl()
+
+        while True:
+            self.stream.write(Color("{magenta}Enter your choice {/magenta}"
+                                    "{b}{yellow}[{}]{/yellow}{/b} ").format(self.default.upper()))
+            self.stream.out.flush()
+            val = self.stream.stdin.readline().strip()
+            if val == "":
+                val = self.default
+
+            val = val.lower()
+
+            if val not in self.options:
+                self.stream.error("Not a valid option")
+            else:
+                opt = self.options[val]
+                opt.function()
+                break
+
+
+def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, str]]):
     for cmd, text in options:
-        stream.write(Color("{magenta}<{/magenta}{green}{cmd}{magenta}>{/magenta} {green}{text}{/green}").format(
-            cmd=cmd,
-            text=text
+        stream.write(Color("{magenta}<{/magenta}{green}{cmd}{/green}{magenta}>{/magenta} {green}{text}{/green}").format(
+                cmd=cmd,
+                text=text
         ))
         stream.nl()
     stream.nl()
 
-    return Color("{magenta}Enter your choice {/magenta}{hiyellow}[{}]{/hiyellow} ").format(default)
+    while True:
+        stream.write(Color("{magenta}Enter your choice {/magenta}{b}{yellow}[{}]{/yellow}{/b} ").format(default))
+        stream.out.flush()
+        val = stream.stdin.readline().strip()
+        if val == '':
+            val = default
+
+        if val not in [o[0] for o in options]:
+            stream.error("Not a valid option")
+        else:
+            return val
 
 
 def amount_prompt(stream: Terminal, prompt: str, default: int, min: int, max: int, **kwargs):
     while True:
         stream.write(Color(prompt).format(**kwargs))
-        stream.write(Color(" {magenta}[{hiyellow}{default}{magenta}]? ").format(default=default))
+        stream.write(Color(" {magenta}[{/magenta}{yellow}{default}{/yellow}{magenta}]?{/magenta} ")
+                     .format(default=default))
         stream.out.flush()
         line = stream.stdin.readline()
         try:
@@ -89,9 +147,10 @@ def amount_prompt(stream: Terminal, prompt: str, default: int, min: int, max: in
 
 def yesno_prompt(stream: Terminal, prompt: str, default: bool, **kwargs):
     stream.write(Color(prompt).format(**kwargs))
-    stream.write(Color(" {magenta}[{hiyellow}{default}{magenta}]? ").format(default='Y' if default else 'N'))
+    stream.write(Color(" {magenta}[{/magenta}{yellow}{default}{/yellow}{magenta}]?{/magenta} ")
+                 .format(default='Y' if default else 'N'))
     stream.out.flush()
-    val = stream.stdin.read(1)
-    if not val.strip():
+    val = stream.stdin.readline().strip()
+    if not val:
         val = default
     return val is True or 'y' == val.lower()

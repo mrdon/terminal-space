@@ -51,15 +51,15 @@ class Prompt(cmd.Cmd):
     def prompt(self):
         s = self.player.ship.sector
         return colored('Command [', 'magenta') + \
-               colored('TL', color='yellow', attrs=['bold']) + \
+               colored('TL', color='yellow') + \
                colored('=', color='magenta') + \
-               colored('00:00:00', color='yellow', attrs=['bold']) + \
+               colored('00:00:00', color='yellow') + \
                colored(']', color='magenta') + \
                colored(':', color='yellow') + \
                colored('[', color='magenta') + \
-               colored(s.id, color='cyan', attrs=['bold']) + \
+               colored(s.id, color='cyan') + \
                colored('] (', color='magenta') + \
-               colored('?=Help', color='yellow', attrs=['bold']) + \
+               colored('?=Help', color='yellow') + \
                colored(')? : ', color='magenta')
 
     def do_move(self, target_sector):
@@ -72,17 +72,18 @@ class Prompt(cmd.Cmd):
             self.out.error("Invalid sector number")
             return
         print_action(self.out, "Move")
-        self.out.write(Color("{magenta}Warping to Sector {hiyellow}{}{/hiyellow}").format(target_id))
+        self.out.write(Color("{magenta}Warping to Sector {/magenta}{yellow}{}{/yellow}").format(target_id))
         self.out.nl(2)
         self.actions.move_trader(sector_id=target_id)
 
     def print_sector(self, sector: SectorClient = None):
+
         if not sector:
             sector = self.player.ship.sector
 
         data = [(colored('Sector', 'green', attrs=['bold']), [
             "{} {} {}".format(
-                    colored(sector.id, 'cyan', attrs=['bold']),
+                    colored(sector.id, 'cyan'),
                     colored('in', 'green'),
                     colored('uncharted space', 'blue'))
         ])]
@@ -98,10 +99,10 @@ class Prompt(cmd.Cmd):
         if sector.port:
             p = sector.port
             data.append((colored('Port', 'magenta'), [
-                "".join([colored(p.name, 'cyan', attrs=['bold']),
+                "".join([colored(p.name, 'cyan'),
                          colored(", ", 'yellow'),
                          colored('Class ', 'magenta'),
-                         colored(p.class_number, 'cyan', attrs=['bold']),
+                         colored(p.class_number, 'cyan'),
                          colored(' (', 'magenta'),
                          p.class_name_colored,
                          colored(')', 'magenta')])
@@ -113,7 +114,7 @@ class Prompt(cmd.Cmd):
         warps = []
         for w in sector.warps:
             if w in self.player.visited:
-                warps.append(colored(w, 'cyan', attrs=['bold']))
+                warps.append(colored(w, 'cyan'))
             else:
                 warps.append(colored('(', 'magenta') +
                              colored(w, 'red') +
