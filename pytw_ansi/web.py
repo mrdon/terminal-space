@@ -3,6 +3,7 @@ from queue import Queue
 
 import aiohttp
 from aiohttp import web
+from colorclass.codes import ANSICodeMapping
 from pytw.config import GameConfig
 from pytw.server import Server
 from pytw_ansi.session import Session
@@ -57,6 +58,7 @@ async def websocket_handler(request):
     await ws.prepare(request)
 
     stdin = WsReader()
+    ANSICodeMapping.enable_all_colors()
     out = Terminal(out=WsWriter(ws), input=stdin)
     session = Session(config, out, server)
     t = threading.Thread(target=session.start)
