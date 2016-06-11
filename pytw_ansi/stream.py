@@ -1,5 +1,8 @@
+import inspect
 import re
 import sys
+from collections import namedtuple
+from types import FunctionType, MethodType
 from typing import Tuple, NamedTuple, Callable
 
 from colorclass import Color
@@ -23,7 +26,7 @@ class Terminal:
 
     def nl(self, times=1):
         for x in range(times):
-            self.out.write('\r\n')
+            self.out.write('\n')
 
     def error(self, msg):
         self.nl()
@@ -60,6 +63,7 @@ Option = NamedTuple('Option', [('key', str), ('description', str), ('function', 
 
 
 class SimpleMenuCmd:
+
     def __init__(self, stream: Terminal, default: str, option_order: Tuple[str]):
         self.stream = stream
         self.default = default
@@ -73,19 +77,17 @@ class SimpleMenuCmd:
     def cmdloop(self):
         self.stream.nl()
         for opt in self.options.values():
-            self.stream.write(Color(
-                "{invis}input={{\"value\": \"{cmd}\"}}{/invis}{magenta}<{/magenta}{green}{cmd}{/green}{magenta}>{/magenta}"
-                "{invis}<end>{/invis}"
-                " {green}{text}{/green}").format(
+            self.stream.write(Color("{magenta}<{/magenta}{green}{cmd}{/green}{magenta}>{/magenta} "
+                                    "{green}{text}{/green}").format(
                     cmd=opt.key.upper(),
                     text=opt.description
             ))
-            self.stream.nl(2)
+            self.stream.nl()
         self.stream.nl()
 
         while True:
             self.stream.write(Color("{magenta}Enter your choice {/magenta}"
-                                    "{invis}input={{\"value\": \"{cmd}\"}}{/invis}{yellow}[{cmd}]{/yellow}{invis}<end>{/invis} ").format(cmd=self.default.upper()))
+                                    "{b}{yellow}[{}]{/yellow}{/b} ").format(self.default.upper()))
             self.stream.out.flush()
             val = self.stream.stdin.readline().strip()
             if val == "":
@@ -99,6 +101,28 @@ class SimpleMenuCmd:
                 opt = self.options[val]
                 opt.function()
                 break
+
+
+def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, str]]):
+    for cmd, text in options:
+        stream.write(Color("{magenta}<{/magenta}{green}{cmd}{/green}{magenta}>{/magenta} {green}{text}{/green}").format(
+                cmd=cmd,
+                text=text
+        ))
+        stream.nl()
+    stream.nl()
+
+    while True:
+        stream.write(Color("{magenta}Enter your choice {/magenta}{b}{yellow}[{}]{/yellow}{/b} ").format(default))
+        stream.out.flush()
+        val = stream.stdin.readline().strip()
+        if val == '':
+            val = default
+
+        if val not in [o[0] for o in options]:
+            stream.error("Not a valid option")
+        else:
+            return val
 
 
 def amount_prompt(stream: Terminal, prompt: str, default: int, min: int, max: int, **kwargs):
@@ -122,19 +146,7 @@ def amount_prompt(stream: Terminal, prompt: str, default: int, min: int, max: in
 
 
 def yesno_prompt(stream: Terminal, prompt: str, default: bool, **kwargs):
-    # with open('assets/boss1.ans', encoding="cp437") as f:
-    #     data = f.read()
-    #     stream.write(data)
-
-    stream.write(Color("{invis}input={\"value\": \"Y\"}{/invis}"
-                       "{magenta}<{/magenta}{green}Y{/green}{magenta}>{/magenta}"
-                       " {green}Yes{/green}"
-                       "{invis}<end>{/invis}  "))
     stream.write(Color(prompt).format(**kwargs))
-    stream.write(Color("{invis}input={\"value\": \"N\"}{/invis}"
-                       "{magenta}<{/magenta}{green}Y{/green}{magenta}>{/magenta}"
-                       " {green}No{/green}"
-                       "{invis}<end>{/invis}"))
     stream.write(Color(" {magenta}[{/magenta}{yellow}{default}{/yellow}{magenta}]?{/magenta} ")
                  .format(default='Y' if default else 'N'))
     stream.out.flush()
