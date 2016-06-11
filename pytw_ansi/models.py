@@ -60,14 +60,27 @@ class PortClient:
         return self.CLASSES[self.class_name]
 
 
+class TraderClient:
+
+    def __init__(self, id: int, name: str):
+        self.name = name
+        self.id = id
+
+
+class TraderShipClient:
+    def __init__(self, id: int, name: str, trader: TraderClient):
+        self.name = name
+        self.id = id
+        self.trader = trader
+
+
 class SectorClient:
-    def __init__(self, id: int, coords: Tuple[int, int], warps: List[int], port: PortClient):
+    def __init__(self, id: int, coords: Tuple[int, int], warps: List[int], port: PortClient, ships: List[TraderShipClient]):
         self.port = port
         self.warps = warps
         self.coords = coords
         self.id = id
-        self.traders = None  # todo
-        self.ships = None  # todo
+        self.ships = ships
 
 
 class ShipClient:
@@ -96,3 +109,5 @@ class PlayerClient:
     def update(self, player):
         self.credits = player.credits
         self.ship = player.ship
+
+

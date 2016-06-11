@@ -177,11 +177,12 @@ class Port:
 
 
 class Sector:
-    def __init__(self, id, coords, warps, port: Port):
+    def __init__(self, game, id, coords, warps, port: Port):
+        self.game = game
         self.id = int(id)
         self.warps = [int(x) for x in warps]
         self.planets = []
-        self.ships = []
+        self.ship_ids = []
         self.coords = coords
         self.port = port
 
@@ -189,10 +190,14 @@ class Sector:
         return sector_id in self.warps
 
     def exit_ship(self, ship):
-        self.ships.remove(ship.id)
+        self.ship_ids.remove(ship.id)
 
     def enter_ship(self, ship):
-        self.ships.append(ship.id)
+        self.ship_ids.append(ship.id)
+
+    @property
+    def ships(self):
+        return [self.game.ships[id] for id in self.ship_ids]
 
 
 class Player:
@@ -239,7 +244,7 @@ class ShipType(ShipTypeArgs, enum.Enum):
 
 
 class Ship:
-    def __init__(self, ship_type: ShipType, name: str, player_id: int, sector_id: int):
+    def __init__(self, game, ship_type: ShipType, name: str, player_id: int, sector_id: int):
         self.id = 0
         self.name = name
         self.player_owner_id = player_id
@@ -248,6 +253,7 @@ class Ship:
         self.holds = {}  # type: Dict[CommodityType: int]
         self.ship_type = ship_type
         self.sector_id = sector_id
+        self.game = game
 
     def move_sector(self, sector_id):
         self.sector_id = sector_id
@@ -259,6 +265,14 @@ class Ship:
     def holds_free(self):
         return self.holds_capacity - sum(self.holds.values())
 
+    @property
+    def player(self):
+        return self.game.players[self.player_id]
+
+    @property
+    def sector(self):
+        return self.game.sectors[self.sector_id]
+
     def remove_from_holds(self, commodity_type: CommodityType, amount: int):
         self.holds[commodity_type] -= amount
 
@@ -269,7 +283,7 @@ class Galaxy:
         self.id = config.id
         self.name = config.name
 
-        self.sectors = AutoIdDict()
+        self.sectors = AutoIdDict()  # type: Dict[int, Sector]
         self.sector_coords_to_id = {}
         self.players = AutoIdDict()
         self.ships = AutoIdDict()
@@ -279,13 +293,11 @@ class Galaxy:
         p = self.players.append(Player(self, name, credits=self.config.player.initial_credits))
         sec = self.sectors[self.config.player.initial_sector_id]
         ship_type = ShipType[self.config.player.initial_ship_type.upper()]
-        s = self.ships.append(Ship(ship_type, 'Foo', player_id=p.id, sector_id=sec.id))
+        s = self.ships.append(Ship(self, ship_type, 'Foo', player_id=p.id, sector_id=sec.id))
         p.ship_id = s.id
         p.visit_sector(sec.id)
         s.move_sector(sec.id)
         sec.enter_ship(s)
-
-        p.visit_sector(self.coords_to_id(0, 0))
         return p
 
     def id_to_coords(self, sector_id):
@@ -322,7 +334,7 @@ class Galaxy:
                 if suffix:
                     name = " ".join([name, suffix])
                 port = Port(sector_id, name, commodities)
-            self.sectors[sector_id] = Sector(sector_id, n, warps, port)
+            self.sectors[sector_id] = Sector(self, sector_id, n, warps, port)
 
     def start(self):
         self._bang_world()

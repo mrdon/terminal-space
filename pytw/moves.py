@@ -13,6 +13,20 @@ class PlayerPublic:
         self.visited = list(player.visited_sectors.keys())
 
 
+class TraderPublic:
+    def __init__(self, player: Player):
+        self.id = player.id
+        self.name = player.name
+
+
+class TraderShipPublic:
+    def __init__(self, ship: Ship):
+        self.id = ship.id
+        self.name = ship.name
+        self.type = ship.ship_type
+        self.trader = TraderPublic(ship.player)
+
+
 class ShipPublic:
     def __init__(self, ship: Ship, sector: Sector):
         self.id = ship.id
@@ -45,8 +59,7 @@ class SectorPublic:
         self.coords = sector.coords
         self.warps = sector.warps
         self.port = None if not sector.port else PortPublic(sector.port)
-        self.traders = None  # todo
-        self.ships = None  # todo
+        self.ships = [TraderShipPublic(ship) for ship in sector.ships]
 
 
 @methods_to_json()
@@ -58,6 +71,12 @@ class ServerEvents:
         pass
 
     def on_new_sector(self, sector: SectorPublic):
+        pass
+
+    def on_ship_enter_sector(self, sector: SectorPublic, ship: TraderShipPublic):
+        pass
+
+    def on_ship_exit_sector(self, sector: SectorPublic, ship: TraderShipPublic):
         pass
 
     def on_invalid_action(self, error: str):
@@ -72,11 +91,12 @@ class ServerEvents:
 
 class ShipMoves:
 
-    def __init__(self, player, galaxy: Galaxy, events: ServerEvents):
+    def __init__(self, server, player, galaxy: Galaxy, events: ServerEvents):
         super().__init__()
         self.galaxy = galaxy
         self.player = player
         self.events = events
+        self.server = server
 
         self.events.on_game_enter(player=PlayerPublic(player))
 
@@ -101,7 +121,24 @@ class ShipMoves:
         target.enter_ship(ship)
         ship.move_sector(target.id)
         self.player.visit_sector(target.id)
-        self.events.on_new_sector(sector=SectorPublic(target))
+        target_public = SectorPublic(target)
+        self.events.on_new_sector(sector=target_public)
+
+        ship_as_trader = TraderShipPublic(ship)
+        for ship in (s for s in ship_sector.ships if s.player_id != self.player.id):
+            if ship.player_id in self.server.sessions:
+                self.server.sessions[ship.player_id].on_ship_exit_sector(sector=SectorPublic(ship_sector), ship=ship_as_trader)
+
+        self.broadcast_ship_enter_sector(ship_as_trader, target_public)
+
+    def broadcast_player_enter_sector(self, player: Player):
+        self.broadcast_ship_enter_sector(TraderShipPublic(player.ship), SectorPublic(player.sector))
+
+    def broadcast_ship_enter_sector(self, ship_as_trader: TraderShipPublic, target: SectorPublic):
+        for ship in (s for s in target.ships if s.trader.id != self.player.id):
+            if ship.trader.id in self.server.sessions:
+                self.server.sessions[ship.trader.id].on_ship_enter_sector(sector=target,
+                                                                          ship=ship_as_trader)
 
     def sell_to_port(self, id: int, commodity: CommodityType, amount: int):
         ship = self.galaxy.ships[self.player.ship_id]  # type: Ship

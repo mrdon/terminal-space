@@ -2,6 +2,7 @@ import cmd
 from typing import Callable
 
 from colorclass import Color
+from pytw.moves import TraderShipPublic
 from pytw.util import methods_to_json
 from pytw_ansi.models import *
 from pytw_ansi.prompts import PromptType, PromptTransition
@@ -109,6 +110,16 @@ class Prompt(cmd.Cmd):
 
             ]))
 
+        if sector.ships:
+            lines = []
+            for ship in [s for s in sector.ships if s.trader.id != self.player.ship.id]:
+                lines.append(Color("{red}{trader}{/red}{yellow},{/yellow}").format(trader=ship.trader.name))
+                lines.append(Color("{green}in{/green} {cyan}{ship}{/cyan} {green}({ship_type}){/green}").format(
+                        ship=ship.name,
+                        ship_type="unknown"
+                ))
+            data.append((Color.yellow("Ships"), lines))
+
         print_grid(self.out, data, separator=colored(': ', 'yellow'))
 
         warps = []
@@ -124,6 +135,18 @@ class Prompt(cmd.Cmd):
         print_grid(self.out, data, separator=colored(': ', 'yellow'))
         self.out.nl()
 
+    def print_ship_enter_sector(self, ship):
+        self.out.nl()
+        self.out.write(Color("{b}{cyan}{trader}{/cyan}{/b} {green}warps into the sector.{/green}")
+                       .format(trader=ship.trader.name))
+        self.out.nl()
+
+    def print_ship_exit_sector(self, ship):
+        self.out.nl()
+        self.out.write(Color("{b}{cyan}{trader}{/cyan}{/b} {green}warps out of the sector.{/green}")
+                       .format(trader=ship.trader.name))
+        self.out.nl()
+
 
 class Events:
     def __init__(self, prompt: Prompt):
@@ -137,6 +160,16 @@ class Events:
         self.prompt.player.ship.sector = sector
         self.prompt.player.visited.add(sector.id)
         self.prompt.print_sector()
+
+    def on_ship_enter_sector(self, sector: SectorClient, ship: TraderShipClient):
+        self.prompt.player.ship.sector = sector
+        if self.prompt.player.ship.sector.id == sector.id:
+            self.prompt.print_ship_enter_sector(ship)
+
+    def on_ship_exit_sector(self, sector: SectorClient, ship: TraderShipClient):
+        self.prompt.player.ship.sector = sector
+        if self.prompt.player.ship.sector.id == sector.id:
+            self.prompt.print_ship_exit_sector(ship)
 
     # noinspection PyMethodMayBeStatic
     def on_invalid_action(self, error: str):
