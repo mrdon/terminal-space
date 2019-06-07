@@ -17,7 +17,7 @@ class TestApp:
         self.server = Server(self.config)
         self.out = Terminal()
         self.session = Session(self.config, self.out, self.server)
-        self.bots = [BotSession("Bot {}".format(x), self.server) for x in range(5)]
+        self.bots = [] #BotSession("Bot {}".format(x), self.server) for x in range(5)]
 
     def run_bots(self, loop: asyncio.AbstractEventLoop):
         asyncio.set_event_loop(loop)
