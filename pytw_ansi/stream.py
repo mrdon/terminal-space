@@ -30,7 +30,7 @@ class Terminal:
 
     def nl(self, times=1):
         for x in range(times):
-            self.out.write('\n')
+            self.out.write('\r\n')
 
     def error(self, msg):
         self.nl()
@@ -73,7 +73,7 @@ class SimpleMenuCmd:
         self.default = default
         self.options = {}
 
-        self.instant_prompt = InstantCmd()
+        self.instant_prompt = InstantCmd(stream)
         for key in option_order:
             key = key.lower()
             fn = getattr(self, "do_{}".format(key))

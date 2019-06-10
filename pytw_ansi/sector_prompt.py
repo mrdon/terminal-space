@@ -1,5 +1,4 @@
 import cmd
-from sys import stdout
 from typing import Callable
 
 from colorclass import Color
@@ -28,7 +27,7 @@ class Prompt:
         self.player = player
         self.actions = actions
 
-        self.instant_cmd = InstantCmd()
+        self.instant_cmd = InstantCmd(term)
         self.instant_cmd.literal('d', default=True)(self.do_d)
         self.instant_cmd.literal('p')(self.do_p)
         self.instant_cmd.literal('q')(self.do_q)
@@ -118,9 +117,10 @@ class Prompt:
 
             ]))
 
-        if sector.ships:
+        other_ships = [s for s in sector.ships if s.trader.id != self.player.ship.id]
+        if other_ships:
             lines = []
-            for ship in [s for s in sector.ships if s.trader.id != self.player.ship.id]:
+            for ship in other_ships:
                 lines.append(Color("{red}{trader}{/red}{yellow},{/yellow}").format(trader=ship.trader.name))
                 lines.append(Color("{green}in{/green} {cyan}{ship}{/cyan} {green}({ship_type}){/green}").format(
                         ship=ship.name,

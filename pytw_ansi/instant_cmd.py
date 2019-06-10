@@ -1,5 +1,6 @@
 import re
 import sys
+import typing
 from cmd import Cmd
 from sys import stdin
 from typing import Callable, Dict, Any
@@ -22,8 +23,9 @@ class InvalidSelectionError(Exception):
 
 class InstantCmd:
 
-    def __init__(self):
+    def __init__(self, out: 'Terminal'):
         self.matchers: Dict[Matcher, Callable[[str], Any]] = {}
+        self.out = out
 
     def regex(self, pattern, default=False, max_length=0):
         return self._register_matcher(matcher=lambda txt: re.match(pattern, txt) is not None,
@@ -60,13 +62,11 @@ class InstantCmd:
                 continue
             elif ord(char) == 127 and buffer:
                 buffer = buffer[:-1]
-                sys.stdout.write(chr(8))
-                sys.stdout.flush()
+                self.out.write(chr(8))
             elif char == '\n' or char == '\r':
                 is_end = True
             else:
-                sys.stdout.write(char)
-                sys.stdout.flush()
+                self.out.write(char)
                 buffer.append(char)
 
             line = "".join(buffer)
