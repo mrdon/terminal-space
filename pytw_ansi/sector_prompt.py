@@ -1,9 +1,11 @@
 import cmd
+from sys import stdout
 from typing import Callable
 
 from colorclass import Color
 from pytw.moves import TraderShipPublic
 from pytw.util import methods_to_json
+from pytw_ansi.instant_cmd import InstantCmd, InvalidSelectionError
 from pytw_ansi.models import *
 from pytw_ansi.prompts import PromptType, PromptTransition
 from pytw_ansi.stream import Terminal, print_grid, print_action
@@ -20,13 +22,17 @@ class Actions:
 
 
 # noinspection PyMethodMayBeStatic,PyIncorrectDocstring
-class Prompt(cmd.Cmd):
+class Prompt:
     def __init__(self, player: PlayerClient, actions: Actions, term: Terminal):
-        super().__init__(stdout=term.out, stdin=term.stdin)
-        self.use_rawinput = False
         self.out = term
         self.player = player
         self.actions = actions
+
+        self.instant_cmd = InstantCmd()
+        self.instant_cmd.literal('d', default=True)(self.do_d)
+        self.instant_cmd.literal('p')(self.do_p)
+        self.instant_cmd.literal('q')(self.do_q)
+        self.instant_cmd.regex('[0-9]+', max_length=4)(self.do_move)
 
     # noinspection PyUnusedLocal
     def do_d(self, line):
@@ -42,11 +48,13 @@ class Prompt(cmd.Cmd):
     def do_q(self, line):
         raise PromptTransition(PromptType.QUIT)
 
-    def emptyline(self):
-        self.do_d('')
-
-    def default(self, line):
-        self.do_move(line)
+    def cmdloop(self):
+        while True:
+            try:
+                self.out.write(self.prompt)
+                return self.instant_cmd.cmdloop()
+            except InvalidSelectionError:
+                self.out.nl()
 
     @property
     def prompt(self):

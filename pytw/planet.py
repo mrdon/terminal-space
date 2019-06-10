@@ -100,7 +100,7 @@ class CommodityType(enum.Enum):
     equipment = ("Equipment", 4, 6)
 
     # noinspection PyInitNewSignature
-    def __init__(self, title, sell_cost, buy_cost):
+    def __init__(self, title: str, sell_cost: int, buy_cost: float):
         self.title = title
         self.sell_cost = sell_cost
         self.buy_offer = buy_cost

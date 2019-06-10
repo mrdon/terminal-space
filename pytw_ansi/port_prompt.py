@@ -28,14 +28,14 @@ class Prompt(SimpleMenuCmd):
         self.player = player
         self.actions = actions
 
-    def do_t(self):
+    def do_t(self, _):
         """
         Trade at this Port
         """
         self._print_table(self.player.ship, self.player.ship.sector.port)
         raise PromptTransition(PromptType.SECTOR)
 
-    def do_q(self):
+    def do_q(self, _):
         """
         Quit, nevermind
         """

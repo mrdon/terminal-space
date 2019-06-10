@@ -8,6 +8,8 @@ from typing import Tuple, NamedTuple, Callable
 from colorclass import Color
 from termcolor import colored
 
+from pytw_ansi.instant_cmd import InstantCmd, InvalidSelectionError
+
 
 class Terminal:
     def __init__(self, out=None, input=None):
@@ -20,9 +22,11 @@ class Terminal:
 
     def write(self, text):
         self.out.write(text)
+        self.out.flush()
 
     def print(self, text, color=None, on_color=None, attrs=None):
         self.out.write(colored(text, color=color, on_color=on_color, attrs=attrs))
+        self.out.flush()
 
     def nl(self, times=1):
         for x in range(times):
@@ -69,10 +73,12 @@ class SimpleMenuCmd:
         self.default = default
         self.options = {}
 
+        self.instant_prompt = InstantCmd()
         for key in option_order:
             key = key.lower()
             fn = getattr(self, "do_{}".format(key))
             self.options[key] = Option(key=key, description=fn.__doc__.strip(), function=fn)
+            self.instant_prompt.literal(key, key.upper() == default.upper())(fn)
 
     def cmdloop(self):
         self.stream.nl()
@@ -84,23 +90,28 @@ class SimpleMenuCmd:
             ))
             self.stream.nl()
         self.stream.nl()
-
         while True:
             self.stream.write(Color("{magenta}Enter your choice {/magenta}"
                                     "{b}{yellow}[{}]{/yellow}{/b} ").format(self.default.upper()))
-            self.stream.out.flush()
-            val = self.stream.stdin.readline().strip()
-            if val == "":
-                val = self.default
-
-            val = val.lower()
-
-            if val not in self.options:
-                self.stream.error("Not a valid option")
-            else:
-                opt = self.options[val]
-                opt.function()
+            try:
+                self.instant_prompt.cmdloop()
                 break
+            except InvalidSelectionError:
+                self.stream.error("Not a valid option")
+            #
+            # self.stream.out.flush()
+            # val = self.stream.stdin.readline().strip()
+            # if val == "":
+            #     val = self.default
+            #
+            # val = val.lower()
+            #
+            # if val not in self.options:
+            #     self.stream.error("Not a valid option")
+            # else:
+            #     opt = self.options[val]
+            #     opt.function()
+            #     break
 
 
 def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, str]]):

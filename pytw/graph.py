@@ -195,10 +195,10 @@ if __name__ == "__main__":
     uni_size = 35
     density = 3.5
 
-
-    uni = gen_hex_center(uni_size)
-    remove_warps(uni, density)
-    draw_hex_circles(uni, uni_size)
+    rnd = random.Random(2345)
+    g = gen_hex_center(10)
+    remove_warps(g, 3.5, rnd)
+    draw_hex_circles(g, uni_size)
 
     #nx.draw_networkx(g, node_size=40)
     #pyplot.show()

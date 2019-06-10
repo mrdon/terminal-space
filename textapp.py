@@ -28,11 +28,11 @@ class TestApp:
     def run(self, loop: asyncio.AbstractEventLoop):
         main_t = Thread(target=self.session.start)
         main_t.start()
-        bot_t = Thread(target=partial(self.run_bots, loop))
-        bot_t.start()
+        # bot_t = Thread(target=partial(self.run_bots, loop))
+        # bot_t.start()
         main_t.join()
-        for bot in self.bots:
-            bot.stop()
+        # for bot in self.bots:
+        #     bot.stop()
 
 
 if __name__ == '__main__':
