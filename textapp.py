@@ -15,24 +15,27 @@ class TestApp:
     def __init__(self):
         self.config = GameConfig(1, "Test Game", diameter=10, seed="test", debug_network=False)
         self.server = Server(self.config)
-        self.out = Terminal()
+        self.out = Terminal(out=sys.stdout, input=sys.stdin)
         self.session = Session(self.config, self.out, self.server)
-        self.bots = [] #BotSession("Bot {}".format(x), self.server) for x in range(5)]
+        self.bots = [BotSession("Bot {}".format(x), self.server) for x in range(5)]
 
     def run_bots(self, loop: asyncio.AbstractEventLoop):
         asyncio.set_event_loop(loop)
         for bot in self.bots:
             loop.call_soon(bot.run)
         loop.run_forever()
+        print("run bots shutdown")
 
     def run(self, loop: asyncio.AbstractEventLoop):
         main_t = Thread(target=self.session.start)
         main_t.start()
+
         # bot_t = Thread(target=partial(self.run_bots, loop))
         # bot_t.start()
         main_t.join()
         # for bot in self.bots:
         #     bot.stop()
+        # bot_t.join()
 
 
 if __name__ == '__main__':

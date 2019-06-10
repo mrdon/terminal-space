@@ -23,7 +23,8 @@ class BotSession:
         await asyncio.sleep(3)
         while self._running:
             self.actions.move_trader(sector_id=choice([x for x in self.sector['warps'] if x < 10]))
-            await asyncio.sleep(randint(1, 10))
+            await asyncio.ensure_future(asyncio.sleep(randint(1, 10)))
+        print(f"shutdown: {id(self)}")
 
     def stop(self):
         self._running = False
@@ -31,7 +32,7 @@ class BotSession:
     async def on_new_sector(self, sector: Dict, **_):
         self.sector = sector
 
-    def run(self):
+    async def run(self):
         loop = asyncio.get_event_loop()
 
         def cb(text):
