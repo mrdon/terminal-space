@@ -52,7 +52,7 @@ class Prompt:
     def cmdloop(self):
         while True:
             try:
-                self.out.write(self.prompt)
+                self.out.write_line(*self.prompt)
                 return self.instant_cmd.cmdloop()
             except InvalidSelectionError:
                 self.out.nl()
@@ -60,7 +60,7 @@ class Prompt:
     @property
     def prompt(self):
         s = self.player.ship.sector
-        return [[
+        return (
             ('magenta', 'Command ['),
             ('yellow', 'TL'),
             ('magenta', '='),
@@ -72,7 +72,7 @@ class Prompt:
             ('magenta', '] ('),
             ('yellow', '?=Help'),
             ('magenta', ')? : ')
-        ]]
+        )
 
     def do_move(self, target_sector):
         """

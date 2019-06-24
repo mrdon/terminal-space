@@ -1,7 +1,11 @@
+from typing import Sequence
 from typing import Tuple, List
 
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition, is_true
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout import Window, UIControl, ScrollbarMargin, UIContent
 
 from pytw_textui.twbuffer import TwBuffer
@@ -79,6 +83,7 @@ class TerminalTextArea(UIControl):
         # Writeable attributes.
 
         self.buffer = TwBuffer()
+        self.buffer.insert_after([("", "blah")])
         self.wrap_lines = wrap_lines
 
         # if scrollbar:
@@ -86,6 +91,17 @@ class TerminalTextArea(UIControl):
         # else:
         right_margins = []
         left_margins = []
+
+        self.key_bindings = KeyBindings()
+
+        def handle_input(event: KeyPressEvent):
+            txt = event.data
+            if isinstance(event, KeyPressEvent):
+                self.buffer.on_key_press(txt)
+                # print(f"input: {txt}")
+                # self.append_text([('', txt)])
+
+        self.key_bindings.add(Keys.Any)(handle_input)
 
         self.window = Window(
             height=height,
@@ -99,8 +115,11 @@ class TerminalTextArea(UIControl):
             right_margins=right_margins,
             get_line_prefix=get_line_prefix)
 
-    def append_text(self, text: List[List[Tuple[str,str]]]):
-        self.buffer.insert_after(text)
+    def append_text(self, *text: Sequence[Tuple[str,str]]):
+        self.buffer.insert_after(*text)
+
+    def get_key_bindings(self):
+        return self.key_bindings
 
     # @property
     # def accept_handler(self):
@@ -116,6 +135,8 @@ class TerminalTextArea(UIControl):
     def __pt_container__(self):
         return self.window
 
+    def is_focusable(self):
+        return True
 
     def create_content(self, width, height):
         return UIContent(get_line=self.buffer.get_line,

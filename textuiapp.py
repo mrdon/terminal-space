@@ -7,8 +7,8 @@ from threading import Thread
 from pytw.config import GameConfig
 from pytw.server import Server
 from pytw_textui.full_screen import TwApplication
-from pytw_ansi.session import Session
-from pytw_ansi.stream import Terminal
+from pytw_textui.session import Session
+from pytw_textui.stream import Terminal
 from pytw_bot.session import BotSession
 
 
@@ -17,7 +17,7 @@ class TestApp:
         self.config = GameConfig(1, "Test Game", diameter=10, seed="test", debug_network=False)
         self.server = Server(self.config)
         self.app = TwApplication()
-        self.out = Terminal(out=self.app.buffer, input=sys.stdin)
+        self.out = Terminal(self.app.buffer)
         self.session = Session(self.config, self.out, self.server)
 
     def run(self):

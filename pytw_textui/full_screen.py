@@ -1,4 +1,5 @@
 from prompt_toolkit import Application
+from prompt_toolkit.layout import FormattedTextControl
 from prompt_toolkit.layout import Layout, HSplit, VSplit, D
 from prompt_toolkit.layout.processors import Processor
 from prompt_toolkit.shortcuts import ProgressBar
@@ -19,8 +20,9 @@ class TwApplication(Application):
             mouse_support=True,
             full_screen=True)
 
-        textfield = TerminalTextArea(focus_on_click=True, scrollbar=True,
-                             width=D(min=70))
+        textfield = TerminalTextArea(focus_on_click=True, scrollbar=True, width=D(min=70))
+        textfield.append_text([("red", "blah")])
+        # textfield = TextArea(text="hi frield")
 
         root_container = HSplit([
             VSplit([
@@ -59,7 +61,7 @@ class TwApplication(Application):
 
         self.layout = Layout(
             menu_container,
-            # focused_element=textfield,
+            focused_element=textfield,
         )
 
         class BufferWriter:
@@ -69,7 +71,7 @@ class TwApplication(Application):
             def flush(self):
                 pass
 
-        self.buffer = BufferWriter()
+        self.buffer = textfield.buffer
 
 
 

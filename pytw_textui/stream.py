@@ -2,7 +2,9 @@ import inspect
 import re
 import sys
 from collections import namedtuple
+from dataclasses import astuple
 from dataclasses import dataclass
+from multiprocessing import Queue
 from types import FunctionType, MethodType
 from typing import Tuple, NamedTuple, Callable, List, Sequence
 
@@ -11,6 +13,7 @@ from termcolor import colored
 
 from pytw_textui.instant_cmd import InstantCmd, InvalidSelectionError
 from pytw_textui.twbuffer import TwBuffer
+from pytw_textui.util import frag_join
 
 
 class Terminal:
@@ -18,10 +21,13 @@ class Terminal:
         self.buffer = buffer
         self.stdin = input
 
-    def write(self, *text: Sequence[Tuple[str,str]]):
-        self.buffer.insert_after(text)
+    def write_line(self, *fragments: Tuple[str, str]):
+        self.write_lines([*fragments])
 
-    def print(self, text, color=None, bg=None, attrs=None):
+    def write_lines(self, *text: Sequence[Tuple[str, str]]):
+        self.buffer.insert_after(*text)
+
+    def print(self, text: str, color=None, bg=None, attrs=None):
         style = ''
         if color:
             style += color
@@ -29,18 +35,44 @@ class Terminal:
             style += f" bg:{bg}"
 
         if attrs:
+            style += " "
             style += " ".join(attrs)
-        self.write((style, text))
+
+        lines = text.split(r'\n|\r|\r\n')
+        self.write_lines(*[[(style, line)] for line in lines])
 
     def nl(self, times=1):
         for x in range(times):
-            self.write([])
+            self.write_lines([], [])
 
     def error(self, msg):
         self.nl()
         self.print(msg, 'red')
         self.nl()
         self.nl()
+
+    def read_key(self) -> str:
+        queue = Queue()
+
+        def receive_input(txt: str):
+            queue.put_nowait(txt)
+
+        self.buffer.input_listeners.append(receive_input)
+        return queue.get()
+
+    def read_line(self, matcher: Callable[[str],bool]) -> str:
+        queue = Queue()
+
+        buffer = []
+
+        def receive_input(txt: str):
+            if txt == '\r' or txt == '\n':
+                queue.put_nowait("".join(buffer))
+            elif matcher(txt):
+                buffer.append(txt)
+
+        self.buffer.input_listeners.append(receive_input)
+        return queue.get()
 
 
 @dataclass
@@ -68,18 +100,26 @@ class Table:
 def print_grid(stream: Terminal, data: Table, separator: Fragment):
     header_len = max(len(row.header.text) for row in data.rows) + 1
     for row in data.rows:
-        stream.write(
-            row.header.astuple(),
+        stream.write_line(
+            astuple(row.header),
             ('', ' ' * (header_len - len(row.header.text))),
-            separator.astuple()
+            astuple(separator)
         )
         pad = False
         for item in row.items:
             if pad:
-                stream.write('', " " * (header_len + 2))
+                stream.write_line(('', " " * (header_len + 2)))
             else:
                 pad = True
-            stream.write(item)
+
+            first = True
+            for frag in item.value:
+                if not first:
+                    stream.write_line(('', ' '))
+                else:
+                    first = False
+                stream.write_line(astuple(frag))
+
             stream.nl()
 
 
@@ -107,22 +147,26 @@ class SimpleMenuCmd:
         for key in option_order:
             key = key.lower()
             fn = getattr(self, "do_{}".format(key))
-            self.options[key] = Option(key=key, description=fn.__doc__.strip(), function=fn)
+            self.options[key] = Option(key=key, description=fn.__doc__.strip(),
+                                       function=fn)
             self.instant_prompt.literal(key, key.upper() == default.upper())(fn)
 
     def cmdloop(self):
         self.stream.nl()
         for opt in self.options.values():
-            self.stream.write(Color("{magenta}<{/magenta}{green}{cmd}{/green}{magenta}>{/magenta} "
-                                    "{green}{text}{/green}").format(
-                    cmd=opt.key.upper(),
-                    text=opt.description
-            ))
+            self.stream.write_line(
+                ('magenta', '<'),
+                ('green', opt.key.upper()),
+                ('magenta', '>'),
+                ('green', opt.description)
+            )
             self.stream.nl()
         self.stream.nl()
         while True:
-            self.stream.write(Color("{magenta}Enter your choice {/magenta}"
-                                    "{b}{yellow}[{}]{/yellow}{/b} ").format(self.default.upper()))
+            self.stream.write_line(
+                ('magenta', 'Enter your choice '),
+                ('bold yellow', f'[{self.default.upper()}] ')
+            )
             try:
                 self.instant_prompt.cmdloop()
                 break
@@ -146,17 +190,21 @@ class SimpleMenuCmd:
 
 def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, str]]):
     for cmd, text in options:
-        stream.write(Color("{magenta}<{/magenta}{green}{cmd}{/green}{magenta}>{/magenta} {green}{text}{/green}").format(
-                cmd=cmd,
-                text=text
-        ))
+        stream.write_line(
+            ('magenta', '<'),
+            ('green', cmd),
+            ('magenta', '> '),
+            ('green', text)
+        )
         stream.nl()
     stream.nl()
 
     while True:
-        stream.write(Color("{magenta}Enter your choice {/magenta}{b}{yellow}[{}]{/yellow}{/b} ").format(default))
-        stream.out.flush()
-        val = stream.stdin.readline().strip()
+        stream.write_line(
+            ('magenta', 'Enter your choice '),
+            ('bold yellow', f'[{default}] ')
+        )
+        val = stream.read_key()
         if val == '':
             val = default
 
@@ -166,13 +214,17 @@ def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, str]])
             return val
 
 
-def amount_prompt(stream: Terminal, prompt: str, default: int, min: int, max: int, **kwargs):
+def amount_prompt(stream: Terminal, prompt: Sequence[Tuple[str, str]], default: int, min: int, max: int,
+                  **kwargs):
     while True:
-        stream.write(Color(prompt).format(**kwargs))
-        stream.write(Color(" {magenta}[{/magenta}{yellow}{default}{/yellow}{magenta}]?{/magenta} ")
-                     .format(default=default))
-        stream.out.flush()
-        line = stream.stdin.readline()
+        stream.write_line(*prompt)
+        stream.write_line(
+            ('magenta', '['),
+            ('yellow', str(default)),
+            ('magenta', ']?'),
+            ('', ' ')
+        )
+        line = stream.read_line(matcher=lambda key: key.isnumeric())
         try:
             value = line
             if not value.strip():
@@ -188,8 +240,9 @@ def amount_prompt(stream: Terminal, prompt: str, default: int, min: int, max: in
 
 def yesno_prompt(stream: Terminal, prompt: str, default: bool, **kwargs):
     stream.write(Color(prompt).format(**kwargs))
-    stream.write(Color(" {magenta}[{/magenta}{yellow}{default}{/yellow}{magenta}]?{/magenta} ")
-                 .format(default='Y' if default else 'N'))
+    stream.write(
+        Color(" {magenta}[{/magenta}{yellow}{default}{/yellow}{magenta}]?{/magenta} ")
+        .format(default='Y' if default else 'N'))
     stream.out.flush()
     val = stream.stdin.readline().strip()
     if not val:

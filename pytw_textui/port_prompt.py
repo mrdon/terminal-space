@@ -45,15 +45,21 @@ class Prompt(SimpleMenuCmd):
     def _print_table(self, ship: ShipClient, port: PortClient):
         print_action(self.out, "Port")
         self.out.print("Docking...", color='red', attrs=['blink'])
-        self.out.write(Color("""
-
-{yellow}Commerce report for {/yellow}{cyan}{port_name}{/cyan}{yellow}: 12:50:33 PM Sat May 06, 2028{/yellow}
-
-{magenta}-=-=-        Docking Log        -=-=-{/magenta}
-
-{green}No current ship docking log on file.{/green}
-
-""").format(port_name=port.name))
+        self.out.write_lines([
+            (
+                ('yellow', 'Commerce report for '),
+                ('cyan', port.name),
+                ('yellow', ': 12:50:33 PM Sat May 06, 2028')
+            ),
+            [],
+            (
+                ('magenta', '-=-=-        Docking Log        -=-=-')
+            ),
+            [],
+            (
+                ('green', 'No current ship docking log on file.')
+            )
+            ])
         rows = []
         for c in port.commodities:
             rows.append([Color.cyan("{name}").format(name=c.type.value),
@@ -84,19 +90,24 @@ class Prompt(SimpleMenuCmd):
                 in_holds = self.player.ship.holds.get(c.type, 0)
                 if c.buying and c.amount and in_holds:
                     amount = min(c.amount, in_holds)
-                    self.out.write(Color("{magenta}We are buying up to {/magenta}{yellow}{available}{/yellow}"
-                                         "{magenta}. You have {/magenta}{yellow}{existing}{/yellow} "
-                                         "{magenta}in your holds. {/magenta}")
-                                   .format(available=c.amount, existing=self.player.ship.holds[c.type]))
+                    self.out.write_line(
+                        ('magenta', 'We are buying up to '),
+                        ('yellow', str(c.amount)),
+                        ('magenta', '. You have '),
+                        ('yellow', str(self.player.ship.holds[c.type])),
+                        ('magenta', 'in your holds. ')
+                    )
                     self.out.nl()
                     value = amount_prompt(
                             stream=self.out,
-                            prompt="{magenta}How many holds of {/magenta}{cyan}{type}{/cyan} "
-                                   "{magenta}do you want to sell{/magenta}",
+                            prompt=(
+                                ('magenta', 'How many holds of '),
+                                ('cyan', c.type.value),
+                                ('magenta', 'do you want to sell')
+                            ),
                             default=amount,
                             min=0,
-                            max=amount,
-                            type=c.type.value)
+                            max=amount)
                     if value:
                         self.out.write(Color("{cyan}Agreed, {/cyan}{yellow}{} {/yellow}{cyan} units.{/cyan}").format(value))
                         self.out.nl(2)

@@ -23,7 +23,7 @@ class InvalidSelectionError(Exception):
 
 class InstantCmd:
 
-    def __init__(self, out: 'Terminal'):
+    def __init__(self, out: 'pytw_textui.Terminal'):
         self.matchers: Dict[Matcher, Callable[[str], Any]] = {}
         self.out = out
 
@@ -56,7 +56,7 @@ class InstantCmd:
 
         while True:
             is_end = False
-            char = readchar.readkey()
+            char = self.out.read_key()
             # print(f"len: {len(char)} ord: {ord(char)}:", end='')
             if len(char) > 1:
                 continue
@@ -66,7 +66,7 @@ class InstantCmd:
             elif char == '\n' or char == '\r':
                 is_end = True
             else:
-                self.out.write(char)
+                self.out.write_line(('', char))
                 buffer.append(char)
 
             line = "".join(buffer)
