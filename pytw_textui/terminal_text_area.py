@@ -6,6 +6,7 @@ from prompt_toolkit.filters import Condition, is_true
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.keys import Keys
+from prompt_toolkit.layout import Margin
 from prompt_toolkit.layout import Window, UIControl, ScrollbarMargin, UIContent
 
 from pytw_textui.twbuffer import TwBuffer
@@ -83,14 +84,22 @@ class TerminalTextArea(UIControl):
         # Writeable attributes.
 
         self.buffer = TwBuffer()
-        self.buffer.insert_after([("", "blah")])
         self.wrap_lines = wrap_lines
 
         # if scrollbar:
         #     right_margins = [ScrollbarMargin(display_arrows=True)]
         # else:
-        right_margins = []
-        left_margins = []
+
+        class MyMargin(Margin):
+
+            def get_width(self, get_ui_content):
+                return 2
+
+            def create_margin(self, window_render_info, width, height):
+                return [("", "  ")]
+
+        right_margins = [MyMargin()]
+        left_margins = [MyMargin()]
 
         self.key_bindings = KeyBindings()
 

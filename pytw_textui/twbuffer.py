@@ -11,6 +11,7 @@ class TwBuffer:
         self.cursor = Point(x=0, y=0)
 
         self.input_listeners: List[Callable[[str], None]] = []
+        self.change_listeners: List[Callable[[], None]] = []
 
     def insert_after(self, *text: Sequence[Tuple[str,str]]):
         if not isinstance(text, (Tuple, List)):
@@ -25,7 +26,7 @@ class TwBuffer:
             for frag in line:
                 if not isinstance(frag, Tuple):
 
-                    raise ValueError(f"Invalid frgament: {frag}")
+                    raise ValueError(f"Invalid fragment: {frag}")
                 if not isinstance(frag[1], str):
                     line_buffer.append((frag[0], str(frag[1])))
                 else:
@@ -42,6 +43,12 @@ class TwBuffer:
             new_y = len(self.buffer) - 1
         new_x = self.get_line_length(new_y) - 1
         self.cursor = Point(x=new_x, y=new_y)
+
+        for listener in self.change_listeners:
+            listener()
+
+    def on_change(self, listener: Callable[[],None]):
+        self.change_listeners.append(listener)
 
     def get_line(self, index: int) -> List[Tuple[str, str]]:
         result = [] if index >= len(self.buffer) else self.buffer[index]

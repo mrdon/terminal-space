@@ -23,12 +23,15 @@ def methods_to_json(sink_property='target'):
 
     def sender(func):
         @wraps(func)
-        def inner(self, **kwargs):
+        async def inner(self, **kwargs):
             target = getattr(self, sink_property)
             obj = {"type": func.__name__, 'id': autoid.incr()}
             obj.update(kwargs)
             data = json_types.encodes(obj, exclude_none=True, set_as_list=True)
-            target(data)
+            resp = target(data)
+            if not inspect.isawaitable(resp):
+                breakpoint()
+            await resp
 
         return inner
 
@@ -42,18 +45,31 @@ def methods_to_json(sink_property='target'):
 
 
 class CallMethodOnEventType:
-    def __init__(self, target: Any, prefix="received"):
-        self.target = target
-        self.prefix = prefix
+    def __init__(self, *target: Any):
+        self.targets = list(target)
 
-    def __call__(self, data: str):
-        if self.prefix is not None:
-            print(Color("{hiblue}{}: {blue}{}").format(self.prefix, data))
+    def append(self, target: Any):
+        if target is None:
+            breakpoint()
+        if target not in self.targets:
+            self.targets.append(target)
+
+    def remove(self, target: Any):
+        self.targets.remove(target)
+
+    async def __call__(self, data: str):
         event = json.loads(data)
         event_type = event['type']
-        func = getattr(self.target, event_type)
-        kwargs = json_types.decode(event, func)
-        func(**kwargs)
+        for target in self.targets:
+            try:
+                func = getattr(target, event_type)
+                if func:
+                    kwargs = json_types.decode(event, func)
+                    return await func(**kwargs)
+            except AttributeError:
+                pass
+
+        raise ValueError(f"No listeners found for {event_type}")
 
 
 class AutoIdDict(dict):

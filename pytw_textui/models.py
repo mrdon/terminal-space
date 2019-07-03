@@ -1,8 +1,19 @@
 import enum
 from collections import defaultdict
-from typing import Tuple, List, Set, Dict
+from typing import Dict
+from typing import List
+from typing import Set
+from typing import Tuple
 
-from termcolor import colored
+from pytw_textui.stream import Fragment
+
+
+class GameConfigClient:
+    def __init__(self, id: str, name: str, diameter: int, sectors_count: int):
+        self.id = id
+        self.name = name
+        self.diameter = diameter
+        self.sectors_count = sectors_count
 
 
 class TradingCommodityClient:
@@ -49,10 +60,10 @@ class PortClient:
         return "".join(name)
 
     @property
-    def class_name_colored(self) -> List[Tuple[str,str]]:
+    def class_name_colored(self) -> List[Fragment]:
         line = []
         for c in self.class_name:
-            line.append(("cyan", c) if c == 'B' else ("green", c))
+            line.append(Fragment("cyan", c) if c == 'B' else Fragment("green", c))
         return line
 
     @property

@@ -5,6 +5,7 @@ class PromptType(Enum):
     SECTOR = 1
     PORT = 2
     QUIT = 3
+    NONE = 4
 
 
 class PromptTransition(Exception):

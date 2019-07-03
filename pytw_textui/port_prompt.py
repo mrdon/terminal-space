@@ -68,7 +68,7 @@ class Prompt(SimpleMenuCmd):
                          Color("{green}{}{/green}{red}%{/red}").format(int(c.amount / c.capacity * 100)),
                          Color.cyan(ship.holds[c.type])])
 
-        self.out.write(tabulate(
+        self.out.write_ansi(tabulate(
                 tabular_data=rows,
                 stralign="center",
                 numalign="center",

@@ -2,6 +2,8 @@ from typing import Callable
 from typing import Dict
 
 from pytw.config import GameConfig
+from pytw.moves import GameConfigPublic
+from pytw.moves import PlayerPublic
 from pytw.moves import ShipMoves, ServerEvents
 from pytw.planet import Galaxy
 from pytw.util import CallMethodOnEventType
@@ -14,13 +16,12 @@ class Server:
         self.game = Galaxy(config)
         self.game.start()
 
-    def join(self, name, callback: Callable[[str], None], debug_network=None) -> Callable[[str], None]:
+    async def join(self, name, callback: Callable[[str], None]) -> Callable[[str], None]:
         player = self.game.add_player(name)
         events = ServerEvents(callback)
         moves = ShipMoves(self, player, self.game, events)
+        await events.on_game_enter(player=PlayerPublic(player), config=GameConfigPublic(self.config, len(self.game.sectors)))
         self.sessions[player.id] = events
-        moves.broadcast_player_enter_sector(player)
+        await moves.broadcast_player_enter_sector(player)
 
-        debug_network = debug_network if debug_network is not None else self.config.debug_network
-        prefix = None if not debug_network else "IN "
-        return CallMethodOnEventType(moves, prefix=prefix)
+        return CallMethodOnEventType(moves)

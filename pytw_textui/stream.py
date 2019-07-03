@@ -1,14 +1,17 @@
 import inspect
 import re
 import sys
+from asyncio import Queue
 from collections import namedtuple
 from dataclasses import astuple
 from dataclasses import dataclass
-from multiprocessing import Queue
 from types import FunctionType, MethodType
+from typing import Iterable
 from typing import Tuple, NamedTuple, Callable, List, Sequence
 
 from colorclass import Color
+from prompt_toolkit import ANSI
+from prompt_toolkit.formatted_text import to_formatted_text
 from termcolor import colored
 
 from pytw_textui.instant_cmd import InstantCmd, InvalidSelectionError
@@ -51,14 +54,14 @@ class Terminal:
         self.nl()
         self.nl()
 
-    def read_key(self) -> str:
+    async def read_key(self) -> str:
         queue = Queue()
 
         def receive_input(txt: str):
             queue.put_nowait(txt)
 
         self.buffer.input_listeners.append(receive_input)
-        return queue.get()
+        return await queue.get()
 
     def read_line(self, matcher: Callable[[str],bool]) -> str:
         queue = Queue()
@@ -73,6 +76,11 @@ class Terminal:
 
         self.buffer.input_listeners.append(receive_input)
         return queue.get()
+
+    def write_ansi(self, text):
+        to_formatted_text(ANSI(text))
+        breakpoint()
+        pass
 
 
 @dataclass
@@ -112,12 +120,7 @@ def print_grid(stream: Terminal, data: Table, separator: Fragment):
             else:
                 pad = True
 
-            first = True
             for frag in item.value:
-                if not first:
-                    stream.write_line(('', ' '))
-                else:
-                    first = False
                 stream.write_line(astuple(frag))
 
             stream.nl()
@@ -138,7 +141,7 @@ class Option:
 
 class SimpleMenuCmd:
 
-    def __init__(self, stream: Terminal, default: str, option_order: Tuple[str]):
+    def __init__(self, stream: Terminal, default: str, option_order: Iterable[str]):
         self.stream = stream
         self.default = default
         self.options = {}
@@ -188,7 +191,7 @@ class SimpleMenuCmd:
             #     break
 
 
-def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, str]]):
+async def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, str]]):
     for cmd, text in options:
         stream.write_line(
             ('magenta', '<'),
@@ -204,7 +207,7 @@ def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, str]])
             ('magenta', 'Enter your choice '),
             ('bold yellow', f'[{default}] ')
         )
-        val = stream.read_key()
+        val = await stream.read_key()
         if val == '':
             val = default
 

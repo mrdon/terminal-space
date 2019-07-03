@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 import re
-import sys
-import typing
-from cmd import Cmd
-from sys import stdin
-from typing import Callable, Dict, Any
-import readchar
+from inspect import isawaitable
+from typing import Any
+from typing import Awaitable
+from typing import Callable
+from typing import Dict
+from typing import TYPE_CHECKING
+from typing import Union
+
+if TYPE_CHECKING:
+    from pytw_textui import Terminal
 
 
 class Matcher:
@@ -23,40 +29,44 @@ class InvalidSelectionError(Exception):
 
 class InstantCmd:
 
-    def __init__(self, out: 'pytw_textui.Terminal'):
+    def __init__(self, out: Terminal):
         self.matchers: Dict[Matcher, Callable[[str], Any]] = {}
         self.out = out
 
     def regex(self, pattern, default=False, max_length=0):
-        return self._register_matcher(matcher=lambda txt: re.match(pattern, txt) is not None,
-                                      default=default,
-                                      max_length=max_length)
+        return self.matcher(matcher=lambda txt: re.match(pattern, txt) is not None,
+                            default=default,
+                            max_length=max_length)
 
     def literal(self, char, default=False):
-        return self._register_matcher(matcher=lambda txt: txt.upper() == char.upper(),
-                                      default=default,
-                                      max_length=len(char))
+        return self.matcher(matcher=lambda txt: txt.upper() == char.upper(),
+                            default=default,
+                            max_length=len(char))
 
-    def _register_matcher(self, matcher: Callable[[str], bool], default: bool, max_length: int):
+    def matcher(self, matcher: Callable[[str], bool], default: bool, max_length: int):
         def outer(func: Callable[[str], Any]):
             self.matchers[Matcher(
                 matcher=matcher,
                 default=default,
                 max_length=max_length)] = func
 
-            def inner(*args, **kwargs):
-                return func(*args, **kwargs)
+            async def inner(*args, **kwargs):
+                result = func(*args, **kwargs)
+                if isawaitable(result):
+                    result = await result
+
+                return result
 
             return inner
 
         return outer
 
-    def cmdloop(self):
+    async def cmdloop(self):
         buffer = []
 
         while True:
             is_end = False
-            char = self.out.read_key()
+            char = await self.out.read_key()
             # print(f"len: {len(char)} ord: {ord(char)}:", end='')
             if len(char) > 1:
                 continue
@@ -75,9 +85,10 @@ class InstantCmd:
             if len(matches) == 1:
                 matcher, func = next(iter(matches.items()))
                 if matcher.max_length == len(buffer) or is_end:
-                    return func(line)
+                    return await func(line)
             elif is_end:
-                return next(v for k, v in self.matchers.items() if k.default)(line)
+                func = next(v for k, v in self.matchers.items() if k.default)
+                return await func(line)
             elif not len(matches):
                 raise InvalidSelectionError()
 

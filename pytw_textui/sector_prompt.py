@@ -1,16 +1,19 @@
-import cmd
 from typing import Callable
 
-from colorclass import Color
-from pytw.moves import TraderShipPublic
 from pytw.util import methods_to_json
-from pytw_textui.instant_cmd import InstantCmd, InvalidSelectionError
+from pytw_textui.game import Game
+from pytw_textui.instant_cmd import InstantCmd
+from pytw_textui.instant_cmd import InvalidSelectionError
 from pytw_textui.models import *
-from pytw_textui.prompts import PromptType, PromptTransition
-from pytw_textui.stream import Terminal, print_grid, print_action
-from termcolor import colored
-
-from pytw_textui.stream import Table, Row, Fragment, Item
+from pytw_textui.prompts import PromptTransition
+from pytw_textui.prompts import PromptType
+from pytw_textui.stream import Fragment
+from pytw_textui.stream import Item
+from pytw_textui.stream import Row
+from pytw_textui.stream import Table
+from pytw_textui.stream import Terminal
+from pytw_textui.stream import print_action
+from pytw_textui.stream import print_grid
 
 
 @methods_to_json()
@@ -18,25 +21,39 @@ class Actions:
     def __init__(self, server: Callable[[str], None]):
         self.target = server
 
-    def move_trader(self, sector_id: int):
+    async def move_trader(self, sector_id: int):
         pass
 
 
 # noinspection PyMethodMayBeStatic,PyIncorrectDocstring
 class Prompt:
-    def __init__(self, player: PlayerClient, actions: Actions, term: Terminal):
+    def __init__(self, game: Game, actions: Actions, term: Terminal):
         self.out = term
-        self.player = player
+        self.player = game.player
         self.actions = actions
 
         self.instant_cmd = InstantCmd(term)
         self.instant_cmd.literal('d', default=True)(self.do_d)
         self.instant_cmd.literal('p')(self.do_p)
         self.instant_cmd.literal('q')(self.do_q)
-        self.instant_cmd.regex('[0-9]+', max_length=4)(self.do_move)
+        self.instant_cmd.regex('[0-9]+', max_length=len(str(game.config.sectors_count)))(self.do_move)
+
+    async def on_game_enter(self, player: PlayerClient):
+        self.player = player
+        self.print_sector()
+
+    async def on_ship_enter_sector(self, sector: SectorClient, ship: TraderShipClient):
+        self.player.ship.sector = sector
+        if self.player.ship.sector.id == sector.id:
+            self.print_ship_enter_sector(ship)
+
+    async def on_ship_exit_sector(self, sector: SectorClient, ship: TraderShipClient):
+        self.player.ship.sector = sector
+        if self.player.ship.sector.id == sector.id:
+            self.print_ship_exit_sector(ship)
 
     # noinspection PyUnusedLocal
-    def do_d(self, line):
+    async def do_d(self, line):
         """
         Re-display the current sector
         """
@@ -49,11 +66,11 @@ class Prompt:
     def do_q(self, line):
         raise PromptTransition(PromptType.QUIT)
 
-    def cmdloop(self):
+    async def cmdloop(self):
         while True:
             try:
                 self.out.write_line(*self.prompt)
-                return self.instant_cmd.cmdloop()
+                return await self.instant_cmd.cmdloop()
             except InvalidSelectionError:
                 self.out.nl()
 
@@ -74,7 +91,7 @@ class Prompt:
             ('magenta', ')? : ')
         )
 
-    def do_move(self, target_sector):
+    async def do_move(self, target_sector):
         """
         Move to an adjacent sector
         """
@@ -84,9 +101,14 @@ class Prompt:
             self.out.error("Invalid sector number")
             return
         print_action(self.out, "Move")
-        self.out.write(Color("{magenta}Warping to Sector {/magenta}{yellow}{}{/yellow}").format(target_id))
+        self.out.write_line(
+            ('magenta', 'Warping to Sector '),
+            ('yellow', str(target_id))
+        )
         self.out.nl(2)
-        self.actions.move_trader(sector_id=target_id)
+
+        await self.actions.move_trader(sector_id=target_id)
+        raise PromptTransition(next_prompt=PromptType.NONE)
 
     def print_sector(self, sector: SectorClient = None):
 
@@ -96,10 +118,10 @@ class Prompt:
         data = Table(rows=[])
 
         data.rows.append(Row(
-            header=Fragment("green bold", "Sector"),
+            header=Fragment("green bold", "Sector "),
             items=[Item([
                 Fragment("cyan", str(sector.id)),
-                Fragment("green", "in"),
+                Fragment("green", " in "),
                 Fragment("blue", "uncharted space")
             ])]
         ))
@@ -125,6 +147,11 @@ class Prompt:
             ])
             items.value += p.class_name_colored
             items.value.append(Fragment("magenta", ")"))
+
+            data.rows.append(Row(
+                header=Fragment("green", "Port"),
+                items=[items]
+            ))
         #
         # other_ships = [s for s in sector.ships if s.trader.id != self.player.ship.id]
         # if other_ships:
@@ -158,40 +185,16 @@ class Prompt:
 
     def print_ship_enter_sector(self, ship):
         self.out.nl()
-        self.out.write(Color("{b}{cyan}{trader}{/cyan}{/b} {green}warps into the sector.{/green}")
-                       .format(trader=ship.trader.name))
+        self.out.write_line(
+            ('cyan bold', ship.trader.name),
+            ('green', ' warps into th esector.')
+        )
         self.out.nl()
 
     def print_ship_exit_sector(self, ship):
         self.out.nl()
-        self.out.write(Color("{b}{cyan}{trader}{/cyan}{/b} {green}warps out of the sector.{/green}")
-                       .format(trader=ship.trader.name))
+        self.out.write_line(
+            ('cyan bold', ship.trader.name),
+            ('green', ' warps out of the sector.')
+        )
         self.out.nl()
-
-
-class Events:
-    def __init__(self, prompt: Prompt):
-        self.prompt = prompt
-
-    def on_game_enter(self, player: PlayerClient):
-        self.prompt.player = player
-        self.prompt.print_sector()
-
-    def on_new_sector(self, sector: SectorClient):
-        self.prompt.player.ship.sector = sector
-        self.prompt.player.visited.add(sector.id)
-        self.prompt.print_sector()
-
-    def on_ship_enter_sector(self, sector: SectorClient, ship: TraderShipClient):
-        self.prompt.player.ship.sector = sector
-        if self.prompt.player.ship.sector.id == sector.id:
-            self.prompt.print_ship_enter_sector(ship)
-
-    def on_ship_exit_sector(self, sector: SectorClient, ship: TraderShipClient):
-        self.prompt.player.ship.sector = sector
-        if self.prompt.player.ship.sector.id == sector.id:
-            self.prompt.print_ship_exit_sector(ship)
-
-    # noinspection PyMethodMayBeStatic
-    def on_invalid_action(self, error: str):
-        self.prompt.out.error(error)
