@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 from asyncio import CancelledError
 from asyncio import Future
 from asyncio import Lock
@@ -8,14 +9,13 @@ from typing import Callable
 from typing import Optional
 
 from pytw.util import CallMethodOnEventType
+from pytw_textui import models
 from pytw_textui import sector_prompt, port_prompt
 from pytw_textui.game import Game
 from pytw_textui.models import GameConfig
 from pytw_textui.models import GameConfigClient
-from pytw_textui.models import Player
 from pytw_textui.models import PlayerClient
 from pytw_textui.models import PortClient
-from pytw_textui.models import Sector
 from pytw_textui.models import SectorClient
 from pytw_textui.prompts import PromptTransition, PromptType
 from pytw_textui.stream import Terminal
@@ -24,7 +24,8 @@ from pytw_textui.stream import Terminal
 class Session:
     def __init__(self, term: Terminal):
         self.term = term
-        self.event_caller = CallMethodOnEventType(self)
+        context = {k: v for k, v in inspect.getmembers(models, inspect.isclass) if k.endswith("Client")}
+        self.event_caller = CallMethodOnEventType(self, context=context)
         self.game: Optional[Game] = None
         self.action_sink = None
 

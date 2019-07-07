@@ -1,4 +1,4 @@
-# from __future__ import annotations
+from __future__ import annotations
 
 import enum
 import typing
@@ -10,10 +10,9 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 from pytw_textui.stream import Fragment
-from pytw_textui import game
 
-# if typing.TYPE_CHECKING:
-#     from pytw_textui.game import Game
+if typing.TYPE_CHECKING:
+    from pytw_textui.game import Game
 
 
 @dataclass
@@ -82,7 +81,7 @@ class Port:
         "BBB": 8
     }
 
-    def __init__(self, game: 'game.Game', client: PortClient):
+    def __init__(self, game: Game, client: PortClient):
         self._game = game
         self.sector_id = client.sector_id
         self.name: str = ""
@@ -133,7 +132,7 @@ class TraderClient:
 
 
 class Trader:
-    def __init__(self, game: 'game.Game', client: TraderClient):
+    def __init__(self, game: Game, client: TraderClient):
         self._game = game
         self.id = client.id
         self.name: str = ""
@@ -150,7 +149,7 @@ class TraderShipClient:
 
 
 class TraderShip:
-    def __init__(self, game: 'game.Game', client: TraderShipClient):
+    def __init__(self, game: Game, client: TraderShipClient):
         self.id = client.id
         self._game = game
         self.name: str = ""
@@ -175,7 +174,7 @@ class SectorClient:
 
 
 class Sector:
-    def __init__(self, game: 'game.Game', client: SectorClient):
+    def __init__(self, game: Game, client: SectorClient):
         self.id = client.id
         self._game = game
         self.port_id: int = 0
@@ -211,7 +210,7 @@ class ShipClient:
 
 
 class Ship:
-    def __init__(self, game: 'game.Game', client: ShipClient):
+    def __init__(self, game: Game, client: ShipClient):
         self._game = game
         self.id = client.id
         self.name: str = ""
@@ -246,7 +245,7 @@ class PlayerClient:
 
 
 class Player:
-    def __init__(self, game: 'game.Game', client: PlayerClient):
+    def __init__(self, game: Game, client: PlayerClient):
         self._game = game
         self.id = client.id
         self.visited: Set[int] = set()

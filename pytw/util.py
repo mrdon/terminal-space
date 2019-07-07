@@ -45,8 +45,9 @@ def methods_to_json(sink_property='target'):
 
 
 class CallMethodOnEventType:
-    def __init__(self, *target: Any):
+    def __init__(self, *target: Any, context=None):
         self.targets = list(target)
+        self.context = context
 
     def append(self, target: Any):
         if target is None:
@@ -67,7 +68,7 @@ class CallMethodOnEventType:
                 continue
 
             if func:
-                kwargs = json_types.decode(event, func)
+                kwargs = json_types.decode(event, func, context=self.context)
                 return await func(**kwargs)
 
         raise ValueError(f"No listeners found for {event_type} in {self.targets}")
