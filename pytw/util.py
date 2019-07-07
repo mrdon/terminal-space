@@ -63,13 +63,14 @@ class CallMethodOnEventType:
         for target in self.targets:
             try:
                 func = getattr(target, event_type)
-                if func:
-                    kwargs = json_types.decode(event, func)
-                    return await func(**kwargs)
             except AttributeError:
-                pass
+                continue
 
-        raise ValueError(f"No listeners found for {event_type}")
+            if func:
+                kwargs = json_types.decode(event, func)
+                return await func(**kwargs)
+
+        raise ValueError(f"No listeners found for {event_type} in {self.targets}")
 
 
 class AutoIdDict(dict):

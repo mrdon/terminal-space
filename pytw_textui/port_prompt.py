@@ -22,7 +22,7 @@ class Actions:
 
 
 class Prompt(SimpleMenuCmd):
-    def __init__(self, player: PlayerClient, actions: Actions, term: Terminal):
+    def __init__(self, player: Player, actions: Actions, term: Terminal):
         super().__init__(term, 'T', ('T', 'Q'))
         self.out = term
         self.player = player
@@ -42,7 +42,7 @@ class Prompt(SimpleMenuCmd):
         self.out.nl()
         raise PromptTransition(PromptType.SECTOR)
 
-    def _print_table(self, ship: ShipClient, port: PortClient):
+    def _print_table(self, ship: Ship, port: Port):
         print_action(self.out, "Port")
         self.out.print("Docking...", color='red', attrs=['blink'])
         self.out.write_lines([

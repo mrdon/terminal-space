@@ -31,6 +31,7 @@ class Prompt:
         self.out = term
         self.player = game.player
         self.actions = actions
+        self.game = game
 
         self.instant_cmd = InstantCmd(term)
         self.instant_cmd.literal('d', default=True)(self.do_d)
@@ -38,17 +39,13 @@ class Prompt:
         self.instant_cmd.literal('q')(self.do_q)
         self.instant_cmd.regex('[0-9]+', max_length=len(str(game.config.sectors_count)))(self.do_move)
 
-    async def on_game_enter(self, player: PlayerClient):
-        self.player = player
-        self.print_sector()
-
     async def on_ship_enter_sector(self, sector: SectorClient, ship: TraderShipClient):
-        self.player.ship.sector = sector
+        self.game.update_sector(sector)
         if self.player.ship.sector.id == sector.id:
             self.print_ship_enter_sector(ship)
 
     async def on_ship_exit_sector(self, sector: SectorClient, ship: TraderShipClient):
-        self.player.ship.sector = sector
+        self.game.update_sector(sector)
         if self.player.ship.sector.id == sector.id:
             self.print_ship_exit_sector(ship)
 
@@ -110,10 +107,10 @@ class Prompt:
         await self.actions.move_trader(sector_id=target_id)
         raise PromptTransition(next_prompt=PromptType.NONE)
 
-    def print_sector(self, sector: SectorClient = None):
+    def print_sector(self, sector: Sector = None):
 
         if not sector:
-            sector = self.player.ship.sector
+            sector = self.player.sector
 
         data = Table(rows=[])
 
@@ -172,7 +169,7 @@ class Prompt:
                 warps.append(Fragment('cyan', str(w)))
             else:
                 warps += [Fragment('magenta', '('),
-                          Fragment('red', w),
+                          Fragment('red', str(w)),
                           Fragment('magenta', ')')]
             warps.append(Fragment('green', ' - '))
 

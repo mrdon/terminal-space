@@ -207,21 +207,32 @@ class Player:
         self.galaxy = game
         self.credits = credits
         self.ship_id = None
-        self.visited_sectors = {}
+        self.port_id = None
+        self.sector_id = None
 
     @property
     def sector(self):
-        return self.galaxy.sectors[self.ship.sector_id]
+        return self.galaxy.sectors[self.sector_id]
+
+    @sector.setter
+    def sector(self, value: Sector):
+        self.sector_id = value.id
 
     @property
     def ship(self):
         return self.galaxy.ships[self.ship_id]
 
-    def has_visited(self, sector_id):
-        return sector_id in self.visited_sectors
+    @property
+    def port(self):
+        sector = self.galaxy.sectors[self.ship.sector_id]
+        return sector.port
+
+    @port.setter
+    def port(self, value: Port):
+        self.port_id = value.sector_id if value else None
 
     def visit_sector(self, sector_id):
-        self.visited_sectors[int(sector_id)] = datetime.now()
+        self.sector_id = sector_id
 
     def teleport(self, new_ship_id):
         self.ship_id = new_ship_id

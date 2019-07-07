@@ -12,7 +12,7 @@ from pytw.util import CallMethodOnEventType
 class Server:
     def __init__(self, config: GameConfig):
         self.config = config
-        self.sessions = {}  # type: Dict[int, ShipMoves]
+        self.sessions: Dict[int, ServerEvents] = {}
         self.game = Galaxy(config)
         self.game.start()
 

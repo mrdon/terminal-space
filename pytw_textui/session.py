@@ -10,8 +10,12 @@ from typing import Optional
 from pytw.util import CallMethodOnEventType
 from pytw_textui import sector_prompt, port_prompt
 from pytw_textui.game import Game
+from pytw_textui.models import GameConfig
 from pytw_textui.models import GameConfigClient
+from pytw_textui.models import Player
 from pytw_textui.models import PlayerClient
+from pytw_textui.models import PortClient
+from pytw_textui.models import Sector
 from pytw_textui.models import SectorClient
 from pytw_textui.prompts import PromptTransition, PromptType
 from pytw_textui.stream import Terminal
@@ -49,18 +53,30 @@ class Session:
 
     async def on_game_enter(self, player: PlayerClient, config: GameConfigClient):
         # print("on game enter!!!!!!!!!!!!!")
-        self.game = Game(config, player)
+        self.game = Game(GameConfig(config))
+        self.game.update_player(player)
+
         prompt = self.start_sector_prompt(self.action_sink)
         # prompt.print_sector(self.game.player.ship.sector)
         self.prompt = prompt
         self.prompt_task.cancel()
 
     async def on_new_sector(self, sector: SectorClient):
-        self.game.player.ship.sector = sector
-        self.game.player.visited.add(sector.id)
+        s = self.game.update_sector(sector)
+
+        self.game.player.ship.sector_id = sector.id
+        self.game.player.visited.add(s.id)
 
         self.prompt = self.start_sector_prompt(self.action_sink)
         self.prompt_task.cancel()
+
+    async def on_port_enter(self, port_client: PortClient):
+        port = self.game.update_port(port_client)
+        self.game.player.port_id = port.sector_id
+
+    async def on_port_exit(self, port_client: PortClient):
+        self.game.update_port(port_client)
+        self.game.player.port_id = None
 
     async def on_invalid_action(self, error: str):
         self.term.error(error)
