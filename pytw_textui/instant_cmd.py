@@ -6,6 +6,7 @@ from typing import Any
 from typing import Awaitable
 from typing import Callable
 from typing import Dict
+from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -14,13 +15,17 @@ if TYPE_CHECKING:
 
 
 class Matcher:
-    def __init__(self, matcher: Callable[[str], bool], default=False, max_length=0):
+    def __init__(self, matcher: Callable[[str], bool], default=False, max_length=0,
+                 validator=None):
         self.default = default
+        if validator is None:
+            validator = lambda _: True
+        self.validator: Callable[[str], bool] = validator
         self.func = matcher
         self.max_length = max_length
 
     def __call__(self, text):
-        return self.func(text)
+        return self.validator(text) and self.func(text)
 
 
 class InvalidSelectionError(Exception):
@@ -33,22 +38,28 @@ class InstantCmd:
         self.matchers: Dict[Matcher, Callable[[str], Any]] = {}
         self.out = out
 
-    def regex(self, pattern, default=False, max_length=0):
+    def regex(self, pattern, default=False, max_length=0,
+              validator: Optional[Callable[[str], bool]] = None):
         return self.matcher(matcher=lambda txt: re.match(pattern, txt) is not None,
                             default=default,
-                            max_length=max_length)
+                            max_length=max_length,
+                            validator=validator)
 
-    def literal(self, char, default=False):
+    def literal(self, char, default=False,
+                validator: Optional[Callable[[str], bool]] = None):
         return self.matcher(matcher=lambda txt: txt.upper() == char.upper(),
                             default=default,
-                            max_length=len(char))
+                            max_length=len(char),
+                            validator=validator)
 
-    def matcher(self, matcher: Callable[[str], bool], default: bool, max_length: int):
+    def matcher(self, matcher: Callable[[str], bool], default: bool, max_length: int,
+                validator: Optional[Callable[[str], bool]] = None):
         def outer(func: Callable[[str], Any]):
             self.matchers[Matcher(
                 matcher=matcher,
                 default=default,
-                max_length=max_length)] = func
+                max_length=max_length,
+                validator=validator)] = func
 
             async def inner(*args, **kwargs):
                 result = func(*args, **kwargs)
@@ -66,17 +77,19 @@ class InstantCmd:
 
         while True:
             is_end = False
+            should_write = False
             char = await self.out.read_key()
             # print(f"len: {len(char)} ord: {ord(char)}:", end='')
             if len(char) > 1:
                 continue
             elif ord(char) == 127 and buffer:
                 buffer = buffer[:-1]
-                self.out.write(chr(8))
+                self.out.backspace(1)
+                continue
             elif char == '\n' or char == '\r':
                 is_end = True
             else:
-                self.out.write_line(('', char))
+                should_write = True
                 buffer.append(char)
 
             line = "".join(buffer)
@@ -84,17 +97,24 @@ class InstantCmd:
 
             if len(matches) == 1:
                 matcher, func = next(iter(matches.items()))
+                if should_write:
+                    self.out.write_line(('', char))
                 if matcher.max_length == len(buffer) or is_end:
                     return await func(line)
             elif is_end:
-                func = next(v for k, v in self.matchers.items() if k.default)
+                try:
+                    func = next(v for k, v in self.matchers.items() if k.default)
+                except StopIteration:
+                    buffer.clear()
+                    continue
+
+                if should_write:
+                    self.out.write_line(('', char))
                 return await func(line)
             elif not len(matches):
-                raise InvalidSelectionError()
-
-
-
-
+                buffer.pop()
+            elif should_write:
+                self.out.write_line(('', char))
 
 # m = InstantCmd()
 #

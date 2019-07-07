@@ -112,10 +112,10 @@ class ServerEvents:
     async def on_invalid_action(self, error: str):
         pass
 
-    async def on_port_enter(self, id: int, player: PlayerPublic):
+    async def on_port_enter(self, port: PortPublic, player: PlayerPublic):
         pass
 
-    async def on_port_exit(self, id: int, player: PlayerPublic):
+    async def on_port_exit(self, port: PortPublic, player: PlayerPublic):
         pass
 
     async def on_port_buy(self, id: int, player: PlayerPublic):
@@ -183,19 +183,18 @@ class ShipMoves:
                     sector=target,
                     ship=ship_as_trader)
 
-    async def enter_port(self, id: int):
-        port: Port = self.galaxy.sectors[id].port
+    async def enter_port(self, port_id: int):
+        port: Port = self.galaxy.sectors[port_id].port
         self.player.port = port
-        await self.server.sessions[self.player.id].on_port_enter(port.sector_id,
-                                                                        PlayerPublic(
-                                                                            self.player))
+        await self.server.sessions[self.player.id].on_port_enter(port=PortPublic(port),
+                                                                 player=PlayerPublic(
+                                                                     self.player))
 
-    async def exit_port(self, id: int):
-        port: Port = self.galaxy.sectors[id].port
+    async def exit_port(self, port_id: int):
+        port: Port = self.galaxy.sectors[port_id].port
         self.player.port = None
-        await self.server.sessions[self.player.id].on_port_exit(port.sector_id,
-                                                                       PlayerPublic(
-                                                                           self.player))
+        await self.server.sessions[self.player.id].on_port_exit(port=PortPublic(port),
+                                                                player=PlayerPublic(self.player))
 
     async def sell_to_port(self, id: int, commodity: CommodityType, amount: int):
         ship = self.galaxy.ships[self.player.ship_id]  # type: Ship

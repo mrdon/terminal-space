@@ -24,6 +24,9 @@ class Terminal:
         self.buffer = buffer
         self.stdin = input
 
+    def backspace(self, num_characters: int = 1):
+        self.buffer.backspace(num_characters)
+
     def write_line(self, *fragments: Tuple[str, str]):
         self.write_lines([*fragments])
 
@@ -154,7 +157,7 @@ class SimpleMenuCmd:
                                        function=fn)
             self.instant_prompt.literal(key, key.upper() == default.upper())(fn)
 
-    def cmdloop(self):
+    async def cmdloop(self):
         self.stream.nl()
         for opt in self.options.values():
             self.stream.write_line(
@@ -171,7 +174,7 @@ class SimpleMenuCmd:
                 ('bold yellow', f'[{self.default.upper()}] ')
             )
             try:
-                self.instant_prompt.cmdloop()
+                await self.instant_prompt.cmdloop()
                 break
             except InvalidSelectionError:
                 self.stream.error("Not a valid option")

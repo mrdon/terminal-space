@@ -1,4 +1,5 @@
 import cmd
+from typing import Awaitable
 from typing import Callable
 
 from colorclass import Color
@@ -11,13 +12,16 @@ from tabulate import tabulate, TableFormat, Line, DataRow
 
 @methods_to_json()
 class Actions:
-    def __init__(self, server: Callable[[str], None]):
+    def __init__(self, server: Callable[[str], Awaitable[None]]):
         self.target = server
 
-    def buy_from_port(self, commodity: CommodityType, amount: int):
+    async def buy_from_port(self, commodity: CommodityType, amount: int):
         pass
 
-    def sell_to_port(self, commodity: CommodityType, amount: int):
+    async def sell_to_port(self, commodity: CommodityType, amount: int):
+        pass
+
+    async def exit_port(self, port_id: int):
         pass
 
 
@@ -27,24 +31,25 @@ class Prompt(SimpleMenuCmd):
         self.out = term
         self.player = player
         self.actions = actions
+        self.out.nl()
 
-    def do_t(self, _):
+    async def do_t(self, _):
         """
         Trade at this Port
         """
         self._print_table(self.player.ship, self.player.ship.sector.port)
         raise PromptTransition(PromptType.SECTOR)
 
-    def do_q(self, _):
+    async def do_q(self, _):
         """
         Quit, nevermind
         """
-        self.out.nl()
-        raise PromptTransition(PromptType.SECTOR)
+        self.out.nl(2)
+        await self.actions.exit_port(port_id=self.player.port_id)
+        raise PromptTransition(PromptType.NONE)
 
     def _print_table(self, ship: Ship, port: Port):
         print_action(self.out, "Port")
-        self.out.print("Docking...", color='red', attrs=['blink'])
         self.out.write_lines([
             (
                 ('yellow', 'Commerce report for '),

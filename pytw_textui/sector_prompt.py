@@ -1,3 +1,4 @@
+from typing import Awaitable
 from typing import Callable
 
 from pytw.util import methods_to_json
@@ -18,10 +19,13 @@ from pytw_textui.stream import print_grid
 
 @methods_to_json()
 class Actions:
-    def __init__(self, server: Callable[[str], None]):
+    def __init__(self, server: Callable[[str], Awaitable[None]]):
         self.target = server
 
     async def move_trader(self, sector_id: int):
+        pass
+
+    async def enter_port(self, port_id: int):
         pass
 
 
@@ -35,7 +39,7 @@ class Prompt:
 
         self.instant_cmd = InstantCmd(term)
         self.instant_cmd.literal('d', default=True)(self.do_d)
-        self.instant_cmd.literal('p')(self.do_p)
+        self.instant_cmd.literal('p', validator=lambda _: self.player.sector.port_id is not None)(self.do_p)
         self.instant_cmd.literal('q')(self.do_q)
         self.instant_cmd.regex('[0-9]+', max_length=len(str(game.config.sectors_count)))(self.do_move)
 
@@ -57,8 +61,12 @@ class Prompt:
         print_action(self.out, 'Redisplay')
         self.print_sector()
 
-    def do_p(self, line):
-        raise PromptTransition(PromptType.PORT)
+    async def do_p(self, line):
+        if self.player.sector.port_id:
+            self.out.nl(2)
+            self.out.print("Docking...", color='red', attrs=['blink'])
+            await self.actions.enter_port(port_id=self.player.sector.port.sector_id)
+            raise PromptTransition(PromptType.NONE)
 
     def do_q(self, line):
         raise PromptTransition(PromptType.QUIT)

@@ -56,7 +56,8 @@ class CallMethodOnEventType:
             self.targets.append(target)
 
     def remove(self, target: Any):
-        self.targets.remove(target)
+        if target in self.targets:
+            self.targets.remove(target)
 
     async def __call__(self, data: str):
         event = json.loads(data)

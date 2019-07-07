@@ -37,22 +37,25 @@ class TwBuffer:
         if text and text[0]:
             self.buffer[self.cursor.y] += text[0]
 
-        new_y = self.cursor.y
         if len(text) > 1:
             self.buffer += text[1:]
-            new_y = len(self.buffer) - 1
-        new_x = self.get_line_length(new_y) - 1
-        self.cursor = Point(x=new_x, y=new_y)
+
+        self._set_cursor_to_buffer_end()
 
         for listener in self.change_listeners:
             listener()
+
+    def _set_cursor_to_buffer_end(self):
+        new_y = len(self.buffer) - 1
+        new_x = self.get_line_length(new_y) - 1
+        self.cursor = Point(x=new_x, y=new_y)
 
     def on_change(self, listener: Callable[[],None]):
         self.change_listeners.append(listener)
 
     def get_line(self, index: int) -> List[Tuple[str, str]]:
         result = [] if index >= len(self.buffer) else self.buffer[index]
-        return result
+        return result + [('', ' ')]
 
     def get_line_length(self, index: int) -> int:
         return sum(len(x[1]) for x in self.get_line(index))
@@ -69,3 +72,20 @@ class TwBuffer:
         for listener in self.input_listeners:
             listener(txt)
 
+    def backspace(self, num_characters: int):
+        line = self.buffer[-1]
+        if num_characters >= self.get_line_length(-1):
+            self.buffer[-1] = []
+        else:
+            while num_characters:
+                last = line[-1]
+                chars = last[1]
+                if len(chars) >= num_characters:
+                    num_characters = 0
+                    chars = chars[0:-num_characters]
+                else:
+                    num_characters -= len(chars)
+                    chars = ''
+                line[-1] = (last[0], chars)
+
+        self._set_cursor_to_buffer_end()
