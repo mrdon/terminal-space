@@ -6,7 +6,8 @@ from colorclass import Color
 from pytw.util import methods_to_json
 from pytw_textui.models import *
 from pytw_textui.prompts import PromptTransition, PromptType
-from pytw_textui.stream import Terminal, print_action, amount_prompt, yesno_prompt, SimpleMenuCmd
+from pytw_textui.stream import Terminal, print_action, amount_prompt, yesno_prompt, \
+    SimpleMenuCmd
 from tabulate import tabulate, TableFormat, Line, DataRow
 
 
@@ -37,7 +38,7 @@ class Prompt(SimpleMenuCmd):
         """
         Trade at this Port
         """
-        self._print_table(self.player.ship, self.player.ship.sector.port)
+        await self._print_table(self.player.ship, self.player.ship.sector.port)
         raise PromptTransition(PromptType.SECTOR)
 
     async def do_q(self, _):
@@ -48,44 +49,44 @@ class Prompt(SimpleMenuCmd):
         await self.actions.exit_port(port_id=self.player.port_id)
         raise PromptTransition(PromptType.NONE)
 
-    def _print_table(self, ship: Ship, port: Port):
+    async def _print_table(self, ship: Ship, port: Port):
         print_action(self.out, "Port")
-        self.out.write_lines([
-            (
-                ('yellow', 'Commerce report for '),
-                ('cyan', port.name),
-                ('yellow', ': 12:50:33 PM Sat May 06, 2028')
-            ),
-            [],
-            (
-                ('magenta', '-=-=-        Docking Log        -=-=-')
-            ),
-            [],
-            (
-                ('green', 'No current ship docking log on file.')
-            )
-            ])
+        self.out.write_line(
+            ('yellow', 'Commerce report for '),
+            ('cyan', port.name),
+            ('yellow', ': 12:50:33 PM Sat May 06, 2028')
+        )
+        self.out.nl()
+        self.out.write_line(
+            ('magenta', '-=-=-        Docking Log        -=-=-')
+        )
+        self.out.nl()
+        self.out.write_line(
+            ('green', 'No current ship docking log on file.')
+        )
         rows = []
-        for c in port.commodities:
+        for c in port.commodities.values():
             rows.append([Color.cyan("{name}").format(name=c.type.value),
                          Color.green("Buying" if c.buying else "Selling"),
                          Color.cyan("{}").format(c.amount),
-                         Color("{green}{}{/green}{red}%{/red}").format(int(c.amount / c.capacity * 100)),
+                         Color("{green}{}{/green}{red}%{/red}").format(
+                             int(c.amount / c.capacity * 100)),
                          Color.cyan(ship.holds[c.type])])
 
         self.out.write_ansi(tabulate(
-                tabular_data=rows,
-                stralign="center",
-                numalign="center",
-                headers=(Color.green(t) for t in ["Items", "Status", "Trading", "% of max", "OnBoard"]),
-                tablefmt=TableFormat(lineabove=Line("", "-", "  ", ""),
-                                     linebelowheader=Line("", Color.magenta("-"), "  ", ""),
-                                     linebetweenrows=None,
-                                     linebelow=Line("", "-", "  ", ""),
-                                     headerrow=DataRow("", "  ", ""),
-                                     datarow=DataRow("", "  ", ""),
-                                     padding=0,
-                                     with_header_hide=["lineabove", "linebelow"])))
+            tabular_data=rows,
+            stralign="center",
+            numalign="center",
+            headers=(Color.green(t) for t in
+                     ["Items", "Status", "Trading", "% of max", "OnBoard"]),
+            tablefmt=TableFormat(lineabove=Line("", "-", "  ", ""),
+                                 linebelowheader=Line("", Color.magenta("-"), "  ", ""),
+                                 linebetweenrows=None,
+                                 linebelow=Line("", "-", "  ", ""),
+                                 headerrow=DataRow("", "  ", ""),
+                                 datarow=DataRow("", "  ", ""),
+                                 padding=0,
+                                 with_header_hide=["lineabove", "linebelow"])))
         self.out.nl(2)
 
         self.print_trader_status()
@@ -104,49 +105,57 @@ class Prompt(SimpleMenuCmd):
                     )
                     self.out.nl()
                     value = amount_prompt(
-                            stream=self.out,
-                            prompt=(
-                                ('magenta', 'How many holds of '),
-                                ('cyan', c.type.value),
-                                ('magenta', 'do you want to sell')
-                            ),
-                            default=amount,
-                            min=0,
-                            max=amount)
+                        stream=self.out,
+                        prompt=(
+                            ('magenta', 'How many holds of '),
+                            ('cyan', c.type.value),
+                            ('magenta', 'do you want to sell')
+                        ),
+                        default=amount,
+                        min=0,
+                        max=amount)
                     if value:
-                        self.out.write(Color("{cyan}Agreed, {/cyan}{yellow}{} {/yellow}{cyan} units.{/cyan}").format(value))
+                        self.out.write_line(
+                            ('cyan', 'Agreed, '),
+                            ('yellow', str(value)),
+                            ('cyan', ' units.'))
                         self.out.nl(2)
-                        if yesno_prompt(self.out,
-                                        prompt="{green}We'll buy them for {/green}{yellow}{price}{/yellow} "
-                                               "{green}credits.{/green}",
+                        if await yesno_prompt(self.out,
+                                        prompt=(
+                                                ('green', "We'll buy them for "),
+                                                ('yellow', str(int(c.price * value))),
+                                                ('green', 'credits.')),
                                         default=True,
                                         price=int(c.price * value)):
-                            self.actions.sell_to_port(commodity=c.type, amount=value)
+                            await self.actions.sell_to_port(commodity=c.type, amount=value)
 
-                            self.out.write(Color.magenta("You drive a hard bargain, but we'll take them."))
+                            self.out.print("You drive a hard bargain, but we'll take them.", color='magenta')
                             self.out.nl(2)
 
-        if self.player.ship.holds_free and sum([c.amount for c in port.commodities if not c.buying]):
-            for c in port.commodities:
+        if self.player.ship.holds_free and sum(
+                [c.amount for c in port.commodities.values() if not c.buying]):
+            for c in port.commodities.values():
                 amount = min(self.player.ship.holds_free, c.amount)
                 if not c.buying and amount:
                     existing = self.player.ship.holds.get(c.type, 0)
 
-                    self.out.write(Color("{magenta}We are selling up to {/magenta}{yellow}{available}{/yellow}"
-                                         "{magenta}. You have {/magenta}{yellow}{existing}{/yellow} "
-                                         "{magenta}in your holds.{/magenta}")
+                    self.out.write(Color(
+                        "{magenta}We are selling up to {/magenta}{yellow}{available}{/yellow}"
+                        "{magenta}. You have {/magenta}{yellow}{existing}{/yellow} "
+                        "{magenta}in your holds.{/magenta}")
                                    .format(available=c.amount, existing=existing))
                     self.out.nl()
                     value = amount_prompt(
-                            stream=self.out,
-                            prompt="{magenta}How many holds of {/magenta}{cyan}{type}{/cyan} "
-                                   "{magenta}do you want to buy{/magenta}",
-                            default=amount,
-                            min=0,
-                            max=amount,
-                            type=c.type.value)
+                        stream=self.out,
+                        prompt="{magenta}How many holds of {/magenta}{cyan}{type}{/cyan} "
+                               "{magenta}do you want to buy{/magenta}",
+                        default=amount,
+                        min=0,
+                        max=amount,
+                        type=c.type.value)
                     if value:
-                        self.out.write(Color("{cyan}Agreed, {/cyan}{yellow}{} {/yellow}{cyan}units.{/cyan}")
+                        self.out.write(Color(
+                            "{cyan}Agreed, {/cyan}{yellow}{} {/yellow}{cyan}units.{/cyan}")
                                        .format(value))
                         self.out.nl(2)
                         if yesno_prompt(self.out,
@@ -156,7 +165,8 @@ class Prompt(SimpleMenuCmd):
                                         price=int(c.price * value)):
                             self.actions.buy_from_port(commodity=c.type, amount=value)
 
-                            self.out.write(Color.green("You are a shrewd trader, they're all yours."))
+                            self.out.write(Color.green(
+                                "You are a shrewd trader, they're all yours."))
                             self.out.nl(2)
 
                     self.print_trader_status()
@@ -171,12 +181,13 @@ class Prompt(SimpleMenuCmd):
                     #     self.out.write(" " * (26 - ))
 
     def print_trader_status(self):
-        self.out.write(Color("{green}You have {/green}{yellow}{credits}{/yellow} "
-                             "{green}credits and {/green}"
-                             "{yellow}{holds}{/yellow}{green} empty cargo holds{/green}").format(
-                credits=self.player.credits,
-                holds=self.player.ship.holds_free
-        ))
+        self.out.write_line(
+            ('green', 'You have '),
+            ('yellow', str(self.player.credits)),
+            ('green', ' credits and '),
+            ('yellow', str(self.player.ship.holds_free)),
+            ('green', ' empty cargo holds')
+        )
         self.out.nl(2)
 
 

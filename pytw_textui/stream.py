@@ -66,24 +66,22 @@ class Terminal:
         self.buffer.input_listeners.append(receive_input)
         return await queue.get()
 
-    def read_line(self, matcher: Callable[[str],bool]) -> str:
-        queue = Queue()
-
-        buffer = []
-
-        def receive_input(txt: str):
-            if txt == '\r' or txt == '\n':
-                queue.put_nowait("".join(buffer))
-            elif matcher(txt):
-                buffer.append(txt)
-
-        self.buffer.input_listeners.append(receive_input)
-        return queue.get()
+    # def read_line(self, matcher: Callable[[str],bool]) -> str:
+    #     queue = Queue()
+    #
+    #     buffer = []
+    #
+    #     def receive_input(txt: str):
+    #         if txt == '\r' or txt == '\n':
+    #             queue.put_nowait("".join(buffer))
+    #         elif matcher(txt):
+    #             buffer.append(txt)
+    #
+    #     self.buffer.input_listeners.append(receive_input)
+    #     return queue.get()
 
     def write_ansi(self, text):
-        to_formatted_text(ANSI(text))
-        breakpoint()
-        pass
+        self.write_line(*to_formatted_text(ANSI(text)))
 
 
 @dataclass
@@ -223,13 +221,7 @@ async def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, 
 def amount_prompt(stream: Terminal, prompt: Sequence[Tuple[str, str]], default: int, min: int, max: int,
                   **kwargs):
     while True:
-        stream.write_line(*prompt)
-        stream.write_line(
-            ('magenta', '['),
-            ('yellow', str(default)),
-            ('magenta', ']?'),
-            ('', ' ')
-        )
+        _write_prompt_and_default(default, prompt, stream)
         line = stream.read_line(matcher=lambda key: key.isnumeric())
         try:
             value = line
@@ -244,13 +236,20 @@ def amount_prompt(stream: Terminal, prompt: Sequence[Tuple[str, str]], default: 
             stream.error("Not a valid number")
 
 
-def yesno_prompt(stream: Terminal, prompt: str, default: bool, **kwargs):
-    stream.write(Color(prompt).format(**kwargs))
-    stream.write(
-        Color(" {magenta}[{/magenta}{yellow}{default}{/yellow}{magenta}]?{/magenta} ")
-        .format(default='Y' if default else 'N'))
-    stream.out.flush()
-    val = stream.stdin.readline().strip()
+def _write_prompt_and_default(default, prompt, stream):
+    stream.write_line(*prompt)
+    stream.write_line(
+        ('magenta', '['),
+        ('yellow', str(default)),
+        ('magenta', ']?'),
+        ('', ' ')
+    )
+
+
+async def yesno_prompt(stream: Terminal, prompt: Sequence[Tuple[str, str]], default: bool, **kwargs):
+    _write_prompt_and_default('Y' if default else 'N', prompt, stream)
+
+    val = await stream.read_key()
     if not val:
         val = default
     return val is True or 'y' == val.lower()

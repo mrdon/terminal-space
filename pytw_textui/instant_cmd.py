@@ -3,12 +3,10 @@ from __future__ import annotations
 import re
 from inspect import isawaitable
 from typing import Any
-from typing import Awaitable
 from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Union
 
 if TYPE_CHECKING:
     from pytw_textui import Terminal
