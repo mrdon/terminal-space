@@ -1,25 +1,33 @@
-import cmd
-from typing import Awaitable
-from typing import Callable
+from __future__ import annotations
+
+from typing import Tuple
 
 from colorclass import Color
-from pytw.util import methods_to_json
-from pytw_textui.models import *
-from pytw_textui.prompts import PromptTransition, PromptType
-from pytw_textui.stream import Terminal, print_action, amount_prompt, yesno_prompt, \
-    SimpleMenuCmd
-from tabulate import tabulate, TableFormat, Line, DataRow
+from tabulate import DataRow
+from tabulate import Line
+from tabulate import TableFormat
+from tabulate import tabulate
+
+from pytw_textui.game import Game
+from pytw_textui.models import CommodityType
+from pytw_textui.models import PlayerClient
+from pytw_textui.models import Port
+from pytw_textui.models import PortClient
+from pytw_textui.models import Ship
+from pytw_textui.prompts import PromptTransition
+from pytw_textui.prompts import PromptType
+from pytw_textui.stream import SimpleMenuCmd
+from pytw_textui.stream import Terminal
+from pytw_textui.stream import amount_prompt
+from pytw_textui.stream import print_action
+from pytw_textui.stream import yesno_prompt
 
 
-@methods_to_json()
 class Actions:
-    def __init__(self, server: Callable[[str], Awaitable[None]]):
-        self.target = server
-
-    async def buy_from_port(self, commodity: CommodityType, amount: int):
+    async def buy_from_port(self, commodity: str, amount: int) -> Tuple[PlayerClient, PortClient]:
         pass
 
-    async def sell_to_port(self, commodity: CommodityType, amount: int):
+    async def sell_to_port(self, commodity: str, amount: int) -> Tuple[PlayerClient, PortClient]:
         pass
 
     async def exit_port(self, port_id: int):
@@ -27,10 +35,11 @@ class Actions:
 
 
 class Prompt(SimpleMenuCmd):
-    def __init__(self, player: Player, actions: Actions, term: Terminal):
+    def __init__(self, game: Game, actions: Actions, term: Terminal):
         super().__init__(term, 'T', ('T', 'Q'))
         self.out = term
-        self.player = player
+        self.game = game
+        self.player = game.player
         self.actions = actions
         self.out.nl()
 
@@ -60,10 +69,11 @@ class Prompt(SimpleMenuCmd):
         self.out.write_line(
             ('magenta', '-=-=-        Docking Log        -=-=-')
         )
-        self.out.nl()
+        self.out.nl(2)
         self.out.write_line(
             ('green', 'No current ship docking log on file.')
         )
+        self.out.nl(2)
         rows = []
         for c in port.commodities.values():
             rows.append([Color.cyan("{name}").format(name=c.type.value),
@@ -92,7 +102,7 @@ class Prompt(SimpleMenuCmd):
         self.print_trader_status()
 
         if self.player.ship.holds_free < self.player.ship.holds_capacity:
-            for c in port.commodities:
+            for c in port.commodities.values():
                 in_holds = self.player.ship.holds.get(c.type, 0)
                 if c.buying and c.amount and in_holds:
                     amount = min(c.amount, in_holds)
@@ -104,17 +114,18 @@ class Prompt(SimpleMenuCmd):
                         ('magenta', 'in your holds. ')
                     )
                     self.out.nl()
-                    value = amount_prompt(
+                    value = await amount_prompt(
                         stream=self.out,
                         prompt=(
                             ('magenta', 'How many holds of '),
                             ('cyan', c.type.value),
-                            ('magenta', 'do you want to sell')
+                            ('magenta', ' do you want to sell')
                         ),
                         default=amount,
                         min=0,
                         max=amount)
                     if value:
+                        self.out.nl()
                         self.out.write_line(
                             ('cyan', 'Agreed, '),
                             ('yellow', str(value)),
@@ -124,11 +135,13 @@ class Prompt(SimpleMenuCmd):
                                         prompt=(
                                                 ('green', "We'll buy them for "),
                                                 ('yellow', str(int(c.price * value))),
-                                                ('green', 'credits.')),
-                                        default=True,
-                                        price=int(c.price * value)):
-                            await self.actions.sell_to_port(commodity=c.type, amount=value)
+                                                ('green', ' credits.')),
+                                        default=True):
+                            player_client, port_client = await self.actions.sell_to_port(commodity=c.type, amount=value)
+                            self.game.update_player(player_client)
+                            self.game.update_port(port_client)
 
+                            self.out.nl()
                             self.out.print("You drive a hard bargain, but we'll take them.", color='magenta')
                             self.out.nl(2)
 
@@ -139,36 +152,51 @@ class Prompt(SimpleMenuCmd):
                 if not c.buying and amount:
                     existing = self.player.ship.holds.get(c.type, 0)
 
-                    self.out.write(Color(
-                        "{magenta}We are selling up to {/magenta}{yellow}{available}{/yellow}"
-                        "{magenta}. You have {/magenta}{yellow}{existing}{/yellow} "
-                        "{magenta}in your holds.{/magenta}")
-                                   .format(available=c.amount, existing=existing))
+                    self.out.write_line(
+                        ('magenta', 'We are selling up to '),
+                        ('yellow', str(c.amount)),
+                        ('magenta', '. You have '),
+                        ('yellow', str(existing)),
+                        ('magenta', ' in your holds.')
+                    )
                     self.out.nl()
-                    value = amount_prompt(
+                    value = await amount_prompt(
                         stream=self.out,
-                        prompt="{magenta}How many holds of {/magenta}{cyan}{type}{/cyan} "
-                               "{magenta}do you want to buy{/magenta}",
+                        prompt=[
+                            ('magenta', 'How many holds of '),
+                            ('cyan', c.type.value),
+                            ('magenta', ' do you want to buy')
+                        ],
                         default=amount,
                         min=0,
-                        max=amount,
-                        type=c.type.value)
+                        max=amount)
                     if value:
-                        self.out.write(Color(
-                            "{cyan}Agreed, {/cyan}{yellow}{} {/yellow}{cyan}units.{/cyan}")
-                                       .format(value))
+                        self.out.nl()
+                        self.out.write_line(
+                            ('cyan', 'Agreed, '),
+                            ('yellow', str(value)),
+                            ('cyan', ' units.'))
                         self.out.nl(2)
-                        if yesno_prompt(self.out,
-                                        prompt="{green}We'll sell them for {green}{yellow}{price}{/yellow} "
-                                               "{green}credits.{/green}",
-                                        default=True,
-                                        price=int(c.price * value)):
-                            self.actions.buy_from_port(commodity=c.type, amount=value)
+                        if await yesno_prompt(self.out,
+                                        prompt=[
+                                            ('green', "We'll sell them for "),
+                                            ('yellow', str(int(c.price * value))),
+                                            ('green', ' credits.')
+                                            ],
+                                        default=True):
+                            player_client, port_client = await self.actions.buy_from_port(commodity=c.type, amount=value)
+                            self.game.update_player(player_client)
+                            self.game.update_port(port_client)
 
-                            self.out.write(Color.green(
-                                "You are a shrewd trader, they're all yours."))
+                            self.out.nl()
+                            self.out.print("You are a shrewd trader, they're all yours.", color="green")
+                            self.out.nl(2)
+                        else:
+                            self.out.nl(2)
+                            self.out.print("Fine, leave then.", color="red")
                             self.out.nl(2)
 
+                    self.out.nl()
                     self.print_trader_status()
 
                     # self.out.print(" Items     Status  Trading % of max OnBoard", 'green')

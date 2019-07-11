@@ -44,7 +44,7 @@ class TwApplication(Application):
         async def read_events():
             while True:
                 event = await self.in_queue.get()
-                await self.session.event_caller(event)
+                await self.session.bus(event)
 
         events_task = asyncio.create_task(read_events())
         events_task.add_done_callback(lambda *_: self.exit())
@@ -60,10 +60,12 @@ class TwApplication(Application):
                 player = self.session.game.player
                 sector = self.session.game.player.ship.sector
                 return FormattedText([
-                    ('grey', f"Sector: "),
+                    ('grey', f"Sector:  "),
                     ("bold", str(sector.id)),
-                    ('grey', f"\nPort:   "),
-                    ("bold", "" if not sector.port else sector.port.class_name)
+                    ('grey', f"\nPort:    "),
+                    ("bold", "" if not sector.port else sector.port.class_name),
+                    ('grey', f"\nCredits: "),
+                    ("bold", str(player.credits))
 
                 ])
             else:

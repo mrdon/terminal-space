@@ -1,11 +1,11 @@
-from typing import Awaitable
-from typing import Callable
+from typing import List
 
-from pytw.util import methods_to_json
 from pytw_textui.game import Game
 from pytw_textui.instant_cmd import InstantCmd
 from pytw_textui.instant_cmd import InvalidSelectionError
-from pytw_textui.models import *
+from pytw_textui.models import Sector
+from pytw_textui.models import SectorClient
+from pytw_textui.models import TraderShipClient
 from pytw_textui.prompts import PromptTransition
 from pytw_textui.prompts import PromptType
 from pytw_textui.stream import Fragment
@@ -17,11 +17,7 @@ from pytw_textui.stream import print_action
 from pytw_textui.stream import print_grid
 
 
-@methods_to_json()
 class Actions:
-    def __init__(self, server: Callable[[str], Awaitable[None]]):
-        self.target = server
-
     async def move_trader(self, sector_id: int):
         pass
 

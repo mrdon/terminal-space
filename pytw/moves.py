@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 import traceback
 import typing
 from typing import Callable
+
+import json_types
 
 from pytw.config import GameConfig
 from pytw.planet import CommodityType
@@ -124,6 +127,9 @@ class ServerEvents:
     async def on_port_sell(self, id: int, player: PlayerPublic):
         pass
 
+    async def reply(self, parent_id, *args):
+        await self.target(json_types.encodes({"type": "reply", "parent_id": parent_id, "args": args}))
+
 
 class ShipMoves:
 
@@ -135,7 +141,7 @@ class ShipMoves:
         self.events = events
         self.server = server
 
-    async def move_trader(self, sector_id: int):
+    async def move_trader(self, sector_id: int, **kwargs):
         if sector_id not in self.galaxy.sectors:
             await self.events.on_invalid_action(error="Not a valid sector number")
             return
@@ -183,20 +189,20 @@ class ShipMoves:
                     sector=target,
                     ship=ship_as_trader)
 
-    async def enter_port(self, port_id: int):
+    async def enter_port(self, port_id: int, **kwargs):
         port: Port = self.galaxy.sectors[port_id].port
         self.player.port = port
         await self.server.sessions[self.player.id].on_port_enter(port=PortPublic(port),
                                                                  player=PlayerPublic(
                                                                      self.player))
 
-    async def exit_port(self, port_id: int):
+    async def exit_port(self, port_id: int, **kwargs):
         port: Port = self.galaxy.sectors[port_id].port
         self.player.port = None
         await self.server.sessions[self.player.id].on_port_exit(port=PortPublic(port),
                                                                 player=PlayerPublic(self.player))
 
-    async def sell_to_port(self, id: int, commodity: CommodityType, amount: int):
+    async def sell_to_port(self, parent_id, id: int, commodity: CommodityType, amount: int, **kwargs):
         ship = self.galaxy.ships[self.player.ship_id]  # type: Ship
         port = self.galaxy.sectors[ship.sector_id].port  # type: Port
 
@@ -225,9 +231,9 @@ class ShipMoves:
         trading.amount -= amount
         ship.remove_from_holds(commodity, amount)
 
-        await self.events.on_port_sell(id=id, player=PlayerPublic(self.player))
+        await self.events.reply(parent_id, PlayerPublic(self.player), PortPublic(port))
 
-    async def buy_from_port(self, id: int, commodity: CommodityType, amount: int):
+    async def buy_from_port(self, parent_id: int, id: int, commodity: CommodityType, amount: int, **kwargs):
         ship = self.galaxy.ships[self.player.ship_id]  # type: Ship
         port = self.galaxy.sectors[ship.sector_id].port  # type: Port
 
@@ -260,4 +266,4 @@ class ShipMoves:
         trading.amount -= amount
         ship.add_to_holds(commodity, amount)
 
-        await self.events.on_port_buy(id=id, player=PlayerPublic(self.player))
+        await self.events.reply(parent_id, PlayerPublic(self.player), PortPublic(port))

@@ -1,6 +1,7 @@
 import inspect
 import re
 import sys
+from asyncio import Future
 from asyncio import Queue
 from collections import namedtuple
 from dataclasses import astuple
@@ -81,7 +82,9 @@ class Terminal:
     #     return queue.get()
 
     def write_ansi(self, text):
-        self.write_line(*to_formatted_text(ANSI(text)))
+        for line in text.split("\n"):
+            self.write_line(*to_formatted_text(ANSI(line)))
+            self.nl()
 
 
 @dataclass
@@ -218,22 +221,20 @@ async def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, 
             return val
 
 
-def amount_prompt(stream: Terminal, prompt: Sequence[Tuple[str, str]], default: int, min: int, max: int,
-                  **kwargs):
-    while True:
-        _write_prompt_and_default(default, prompt, stream)
-        line = stream.read_line(matcher=lambda key: key.isnumeric())
-        try:
-            value = line
-            if not value.strip():
-                value = default
-            value = int(value)
-            if value < min or value > max:
-                raise ValueError("Number out of range")
-            else:
-                return value
-        except ValueError:
-            stream.error("Not a valid number")
+async def amount_prompt(stream: Terminal, prompt: Sequence[Tuple[str, str]], default: int, min: int, max: int):
+    _write_prompt_and_default(default, prompt, stream)
+    prompt = InstantCmd(stream)
+
+    async def handle_input(txt):
+        value = int(txt)
+        if value < min or value > max:
+            raise ValueError("Number out of range")
+        else:
+            return value
+
+    prompt.regex('[0-9]+', max_length=len(str(max)))(handle_input)
+    prompt.literal('y', default=True)(lambda _: default)
+    return await prompt.cmdloop()
 
 
 def _write_prompt_and_default(default, prompt, stream):
@@ -250,6 +251,6 @@ async def yesno_prompt(stream: Terminal, prompt: Sequence[Tuple[str, str]], defa
     _write_prompt_and_default('Y' if default else 'N', prompt, stream)
 
     val = await stream.read_key()
-    if not val:
+    if not val.strip():
         val = default
     return val is True or 'y' == val.lower()

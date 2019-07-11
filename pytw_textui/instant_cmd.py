@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from asyncio import coroutine
 from inspect import isawaitable
 from typing import Any
 from typing import Callable
@@ -98,7 +99,7 @@ class InstantCmd:
                 if should_write:
                     self.out.write_line(('', char))
                 if matcher.max_length == len(buffer) or is_end:
-                    return await func(line)
+                    return await coroutine(func)(line)
             elif is_end:
                 try:
                     func = next(v for k, v in self.matchers.items() if k.default)
@@ -108,7 +109,7 @@ class InstantCmd:
 
                 if should_write:
                     self.out.write_line(('', char))
-                return await func(line)
+                return await coroutine(func)(line)
             elif not len(matches):
                 buffer.pop()
             elif should_write:

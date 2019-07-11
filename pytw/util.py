@@ -37,7 +37,7 @@ def methods_to_json(sink_property='target'):
 
     def decorate(cls):
         for name, fn in {name: fn for name, fn in inspect.getmembers(cls)
-                         if isinstance(fn, types.FunctionType) and not name.startswith("__")}.items():
+                         if isinstance(fn, types.FunctionType) and name.startswith("on_")}.items():
             setattr(cls, name, sender(fn))
         return cls
 
@@ -70,6 +70,7 @@ class CallMethodOnEventType:
 
             if func:
                 kwargs = json_types.decode(event, func, context=self.context)
+                kwargs["parent_id"] = event["id"]
                 return await func(**kwargs)
 
         raise ValueError(f"No listeners found for {event_type} in {self.targets}")
