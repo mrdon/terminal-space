@@ -32,6 +32,50 @@ class GameConfig:
 
 
 @dataclass
+class PlanetClient:
+    id: int
+    name: str
+    regions: List
+    planet_type: str
+    fuel_ore: int
+    organics: int
+    equipment: int
+    fighters: int
+    owner: TraderClient
+
+
+class Planet:
+    def __init__(self, game: Game, planet: PlanetClient):
+        self._game = game
+        self.id: int = planet.id
+        self.name: str = ""
+        self.owner_id: int = 0
+        self.planet_type: str = ""
+        self.regions: List = []
+
+        self.fuel_ore: int = 0
+        self.organics: int = 0
+        self.equipment: int = 0
+        self.fighters: int = 0
+        self.update(planet)
+
+    def update(self, planet: PlanetClient):
+        self.name = planet.name
+        self.owner_id = planet.owner.id if planet.owner else None
+        self.planet_type = planet.planet_type
+        self.regions = planet.regions
+
+        self.fuel_ore = planet.fuel_ore
+        self.organics = planet.organics
+        self.equipment = planet.equipment
+        self.fighters = planet.fighters
+
+    @property
+    def owner(self):
+        return self._game.traders[self.owner_id] if self.owner_id else None
+
+
+@dataclass
 class TradingCommodityClient:
     type: str
     buying: bool
@@ -171,6 +215,7 @@ class SectorClient:
     warps: List[int]
     port: PortClient
     ships: List[TraderShipClient]
+    planets: List[PlanetClient]
 
 
 class Sector:
@@ -181,6 +226,7 @@ class Sector:
         self.warps: List[int] = []
         self.coords: Tuple[int, int] = (0, 0)
         self.trader_ship_ids: List[int] = []
+        self.planet_ids: List[int] = []
         self.update(client)
 
     def update(self, client: SectorClient):
@@ -190,6 +236,7 @@ class Sector:
         self.coords = client.coords
 
         self.trader_ship_ids = [ship.id for ship in client.ships]
+        self.planet_ids = [p.id for p in client.planets]
 
     @property
     def port(self) -> Optional[Port]:
@@ -198,6 +245,10 @@ class Sector:
     @property
     def ships(self) -> List[TraderShip]:
         return [self._game.trader_ships.get(ship_id) for ship_id in self.trader_ship_ids]
+
+    @property
+    def planets(self) -> List[Planet]:
+        return [self._game.planets.get(id) for id in self.planet_ids]
 
 
 @dataclass

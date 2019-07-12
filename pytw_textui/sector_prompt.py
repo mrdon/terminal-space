@@ -155,14 +155,17 @@ class Prompt:
             ])]
         ))
 
-        # if sector.planets:
-        #     lines = []
-        #     for planet in sector.planets:
-        #         lines.append(colored("({}) {}".format(
-        #             colored('M', color='yellow', attrs=['bold']),
-        #             planet.name)
-        #         ))
-        #     data.append((colored('Planets', 'magenta'), lines))
+        if sector.planets:
+            items = []
+            for planet in sector.planets:
+                items.append(Item([
+                    Fragment("fg:yellow bold", f"({planet.planet_type}) "),
+                    Fragment("white", planet.name)
+                ]))
+            data.rows.append(Row(
+                header=Fragment("magenta", "Planets"),
+                items=items
+            ))
 
         if sector.port:
             p = sector.port

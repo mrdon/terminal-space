@@ -3,6 +3,7 @@ from collections import namedtuple
 from datetime import datetime
 import enum
 from typing import List, Dict
+from typing import Optional
 
 import networkx
 from pytw.config import GameConfig
@@ -31,6 +32,8 @@ PORT_NAMES = ["Aegis", "Aeon", "Aeris", "Babylon", "Aeternitas", "Aether", "Alli
               "Vanquish", "Vesta", "Vestige", "Victoria", "Virtue", "Visage", "Voyage", "Vulcan", "Warden", "Yggdrasil",
               "Zeus", "Zion"]
 PORT_SUFFIXES = ["", "Station", "Base", "Terminal", "Outpost"] + [str(x) for x in range(0, 9)]
+
+PLANET_SUFFIXES = ["II", "III", "IV", "V", "V1", "VII", "VIII", "IX", "Alpha", "Beta", "Omega", "Gamma", "Zeta"]
 
 Cost = namedtuple("Cost", ["credits", "fuel_ore", "organics", "equipment", "colonists", "time", "citadel_level_min"])
 
@@ -70,16 +73,21 @@ class PlanetType(PlanetTypeArgs, enum.Enum):
                        fuel_ore_boost=10,
                        organics_boost=10,
                        equipment_boost=10)
+    V = PlanetTypeArgs(name="V",
+                       fuel_ore_boost=20,
+                       organics_boost=3,
+                       equipment_boost=5)
 
 
 class Planet:
     MAX_REGIONS = 10
 
-    def __init__(self, planet_type, planet_id, name, owner_id):
+    def __init__(self, game, planet_type: PlanetType, name: str, owner_id: Optional[int]):
+        self.game: Galaxy = game
         self.name = name
-        self.id = planet_id
+        self.id = 0
         self.owner_id = owner_id
-        self.planet_type = planet_type
+        self.planet_type: PlanetType = planet_type
         self.regions = []
 
         self.fuel_ore = 0
@@ -92,6 +100,10 @@ class Planet:
             raise ValueError("Region limit reached")
 
         self.regions.append(region)
+
+    @property
+    def owner(self):
+        return self.game.players[self.owner_id] if self.owner_id else None
 
 
 class CommodityType(enum.Enum):
@@ -177,11 +189,11 @@ class Port:
 
 
 class Sector:
-    def __init__(self, game, id, coords, warps, port: Port):
-        self.game = game
+    def __init__(self, game, id, coords, warps, port: Port, planets: List[Planet]):
+        self.game: Galaxy = game
         self.id = int(id)
         self.warps = [int(x) for x in warps]
-        self.planets = []
+        self.planet_ids: List[int] = [p.id for p in planets]
         self.ship_ids = []
         self.coords = coords
         self.port = port
@@ -198,6 +210,10 @@ class Sector:
     @property
     def ships(self):
         return [self.game.ships[id] for id in self.ship_ids]
+
+    @property
+    def planets(self):
+        return [self.game.planets[id] for id in self.planet_ids]
 
 
 class Player:
@@ -298,6 +314,7 @@ class Galaxy:
         self.sector_coords_to_id = {}
         self.players = AutoIdDict()
         self.ships = AutoIdDict()
+        self.planets = AutoIdDict()
         self._graph = None
 
     def add_player(self, name):
@@ -345,7 +362,17 @@ class Galaxy:
                 if suffix:
                     name = " ".join([name, suffix])
                 port = Port(sector_id, name, commodities)
-            self.sectors[sector_id] = Sector(self, sector_id, n, warps, port)
+
+            planets = []
+            if rnd.randint(1, 2) == 1:
+                for x in range(int(rnd.gauss(4.5, 1.5))):
+                    name = rnd.choice(PORT_NAMES)
+                    suffix = rnd.choice(PLANET_SUFFIXES)
+                    type = rnd.choice(list(PlanetType))
+                    planet = self.planets.append(Planet(self, type, f"{name} {suffix}", None))
+                    planets.append(planet)
+
+            self.sectors[sector_id] = Sector(self, sector_id, n, warps, port, planets)
 
     def start(self):
         self._bang_world()

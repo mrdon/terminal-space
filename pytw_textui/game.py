@@ -5,6 +5,8 @@ from typing import List
 import networkx as nx
 
 from pytw_textui.models import GameConfig
+from pytw_textui.models import Planet
+from pytw_textui.models import PlanetClient
 from pytw_textui.models import Player
 from pytw_textui.models import PlayerClient
 from pytw_textui.models import Port
@@ -22,11 +24,12 @@ from pytw_textui.models import TraderShipClient
 class Game:
     def __init__(self, config: GameConfig):
         self.config = config
-        self.sectors: List[Sector] = [None] *  config.sectors_count
+        self.sectors: List[Sector] = [None] * (config.sectors_count + 1)
         self.trader_ships: Dict[int, TraderShip] = {}
         self.ships: Dict[int, Ship] = {}
         self.ports: Dict[int, Port] = {}
         self.traders: Dict[int, Trader] = {}
+        self.planets: Dict[int, Planet] = {}
         self.player: Player = None
 
     # noinspection PyUnresolvedReferences
@@ -68,6 +71,10 @@ class Game:
             for ship in client.ships:
                 self.update_trader_ship(ship)
 
+        if client.planets:
+            for planet in client.planets:
+                self.update_planet(planet)
+
         return self.sectors[client.id]
 
     def update_trader_ship(self, client: TraderShipClient) -> TraderShip:
@@ -96,6 +103,14 @@ class Game:
             self.traders[client.id] = Trader(self, client)
 
         return self.traders[client.id]
+
+    def update_planet(self, client: PlanetClient) -> Planet:
+        if client.id in self.planets:
+            self.planets[client.id].update(client)
+        else:
+            self.planets[client.id] = Planet(self, client)
+
+        return self.planets[client.id]
 
     def plot_course(self, from_id: int, to_id: int) -> List[Sector]:
         g = self._gen_graph()

@@ -10,6 +10,7 @@ import json_types
 from pytw.config import GameConfig
 from pytw.planet import CommodityType
 from pytw.planet import Galaxy
+from pytw.planet import Planet
 from pytw.planet import Player
 from pytw.planet import Port
 from pytw.planet import Sector
@@ -93,6 +94,21 @@ class SectorPublic:
         else:
             self.port = None
         self.ships = [TraderShipPublic(ship) for ship in sector.ships]
+        self.planets = [PlanetPublic(planet) for planet in sector.planets]
+
+
+class PlanetPublic:
+    def __init__(self, planet: Planet):
+        self.id = planet.id
+        self.name = planet.name
+        self.owner = TraderPublic(planet.owner) if planet.owner else None
+        self.planet_type = planet.planet_type.name
+        self.regions = planet.regions
+
+        self.fuel_ore = 0
+        self.organics = 0
+        self.equipment = 0
+        self.fighters = 0
 
 
 @methods_to_json()

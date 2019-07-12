@@ -1,6 +1,8 @@
+from functools import partial
 from typing import Sequence
 from typing import Tuple, List
 
+import math
 from prompt_toolkit.application import get_app
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition, is_true
@@ -9,6 +11,7 @@ from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout import Margin
 from prompt_toolkit.layout import Window, UIControl, ScrollbarMargin, UIContent
+from prompt_toolkit.layout.screen import Point
 from prompt_toolkit.mouse_events import MouseEventType
 
 from pytw_textui.twbuffer import TwBuffer
@@ -101,15 +104,7 @@ class TerminalTextArea(UIControl):
         left_margins = [MyMargin()]
 
         self.key_bindings = KeyBindings()
-
-        def handle_input(event: KeyPressEvent):
-            txt = event.data
-            if isinstance(event, KeyPressEvent):
-                self.buffer.on_key_press(txt)
-                # print(f"input: {txt}")
-                # self.append_text([('', txt)])
-
-        self.key_bindings.add(Keys.Any)(handle_input)
+        self.show_cursor = True
 
         self.window = Window(
             height=height,
@@ -122,6 +117,32 @@ class TerminalTextArea(UIControl):
             left_margins=left_margins,
             right_margins=right_margins,
             get_line_prefix=get_line_prefix)
+
+        def handle_input(event: KeyPressEvent):
+            self.show_cursor = True
+            txt = event.data
+            if isinstance(event, KeyPressEvent):
+                self.buffer.on_key_press(txt)
+                # print(f"input: {txt}")
+                # self.append_text([('', txt)])
+
+        def scrollup(jump: int, _):
+            # self.show_cursor = False
+            self.buffer.cursor = Point(0, max(0, self.buffer.cursor.y - jump))
+
+        def scrolldown(jump: int, _):
+            # self.show_cursor = False
+            y = min(self.buffer.line_count - 1, self.buffer.cursor.y + jump)
+            x = 0
+            if y == self.buffer.line_count - 1:
+                x = self.buffer.get_line_length(y) - 1
+            self.buffer.cursor = Point(x, min(self.buffer.line_count - 1, self.buffer.cursor.y + jump))
+
+        self.key_bindings.add(Keys.PageDown)(partial(scrolldown, 40))
+        self.key_bindings.add(Keys.PageUp)(partial(scrollup, 40))
+        self.key_bindings.add(Keys.Up)(partial(scrollup, 1))
+        self.key_bindings.add(Keys.Down)(partial(scrolldown, 1))
+        self.key_bindings.add(Keys.Any)(handle_input)
 
     def append_text(self, *text: Sequence[Tuple[str,str]]):
         self.buffer.insert_after(*text)
@@ -157,6 +178,6 @@ class TerminalTextArea(UIControl):
         return UIContent(get_line=self.buffer.get_line,
                          line_count=self.buffer.line_count,
                          cursor_position=self.buffer.cursor_position,
-                         show_cursor=True)
+                         show_cursor=self.show_cursor)
 
 
