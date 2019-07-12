@@ -18,7 +18,7 @@ from pytw_textui.stream import print_grid
 
 
 class Actions:
-    async def move_trader(self, sector_id: int):
+    async def move_trader(self, sector_id: int) -> SectorClient:
         pass
 
     async def enter_port(self, port_id: int):
@@ -110,8 +110,13 @@ class Prompt:
             )
             self.out.nl(2)
 
-            await self.actions.move_trader(sector_id=target_id)
-            raise PromptTransition(next_prompt=PromptType.NONE)
+            sector_client = await self.actions.move_trader(sector_id=target_id)
+            s = self.game.update_sector(sector_client)
+
+            self.game.player.ship.sector_id = s.id
+            self.game.player.visited.add(s.id)
+            self.print_sector(s)
+
         elif self.game.sectors[target_id]:
             self.out.write_line(
                 ('magenta', 'Auto-warping to Sector '),
@@ -122,9 +127,15 @@ class Prompt:
             for warp in warps[1:]:
                 if not warp:
                     breakpoint()
-                await self.actions.move_trader(sector_id=warp.id)
 
-            raise PromptTransition(next_prompt=PromptType.NONE)
+                print_action(self.out, f"Warping to sector {warp.id}")
+                sector_client = await self.actions.move_trader(sector_id=warp.id)
+                s = self.game.update_sector(sector_client)
+
+                self.game.player.ship.sector_id = s.id
+                self.game.player.visited.add(s.id)
+                self.print_sector(s)
+
         else:
             self.out.error("Unknown target sector")
 

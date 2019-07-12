@@ -113,14 +113,14 @@ class EventBus:
             args = event["args"]
             waited = self.wait_for_ids[event_id]
             origin = waited.type.__origin__ if hasattr(waited.type, "__origin__") else None
-            if issubclass(origin, tuple):
+            if origin and issubclass(origin, tuple):
                 result = []
                 for t in waited.type.__args__:
                     obj = json_types.decode(args.pop(0), t, context=self.context)
                     result.append(obj)
                 obj = (*result,)
             else:
-                obj = json_types.decode(event, waited.type)
+                obj = json_types.decode(args.pop(0), waited.type, context=self.context)
             waited.future.set_result(obj)
 
         else:

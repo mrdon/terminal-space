@@ -66,15 +66,6 @@ class Session:
         self.prompt = prompt
         self.prompt_task.cancel()
 
-    async def on_new_sector(self, sector: SectorClient):
-        s = self.game.update_sector(sector)
-
-        self.game.player.ship.sector_id = sector.id
-        self.game.player.visited.add(s.id)
-
-        self.prompt = self.start_sector_prompt()
-        self.prompt_task.cancel()
-
     async def on_port_enter(self, port: PortClient, player: PlayerClient):
         p = self.game.update_port(port)
         self.game.update_player(player)

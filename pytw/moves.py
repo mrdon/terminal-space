@@ -141,7 +141,7 @@ class ShipMoves:
         self.events = events
         self.server = server
 
-    async def move_trader(self, sector_id: int, **kwargs):
+    async def move_trader(self, parent_id: int, sector_id: int, **kwargs):
         if sector_id not in self.galaxy.sectors:
             await self.events.on_invalid_action(error="Not a valid sector number")
             return
@@ -165,7 +165,7 @@ class ShipMoves:
             ship.move_sector(target.id)
             self.player.visit_sector(target.id)
             target_public = SectorPublic(target)
-            await self.events.on_new_sector(sector=target_public)
+            await self.events.reply(parent_id, target_public)
 
             ship_as_trader = TraderShipPublic(ship)
             for ship in (s for s in ship_sector.ships if s.player_id != self.player.id):
