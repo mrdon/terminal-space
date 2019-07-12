@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import Dict
 from typing import List
 
+import networkx as nx
+
 from pytw_textui.models import GameConfig
 from pytw_textui.models import Player
 from pytw_textui.models import PlayerClient
@@ -94,3 +96,18 @@ class Game:
             self.traders[client.id] = Trader(self, client)
 
         return self.traders[client.id]
+
+    def plot_course(self, from_id: int, to_id: int) -> List[Sector]:
+        g = self._gen_graph()
+        steps: List[int] = nx.shortest_path(g, from_id, to_id)
+        return [self.sectors[x] for x in steps]
+
+    def _gen_graph(self) -> nx.Graph:
+        g = nx.Graph(directed=True)
+
+        for sector in (sector for sector in self.sectors if sector):
+            g.add_node(sector.id)
+            for warp in sector.warps:
+                g.add_edge(sector.id, warp)
+
+        return g

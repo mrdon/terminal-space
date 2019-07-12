@@ -101,15 +101,32 @@ class Prompt:
         except ValueError:
             self.out.error("Invalid sector number")
             return
-        print_action(self.out, "Move")
-        self.out.write_line(
-            ('magenta', 'Warping to Sector '),
-            ('yellow', str(target_id))
-        )
-        self.out.nl(2)
 
-        await self.actions.move_trader(sector_id=target_id)
-        raise PromptTransition(next_prompt=PromptType.NONE)
+        print_action(self.out, "Move")
+        if target_id in self.player.sector.warps:
+            self.out.write_line(
+                ('magenta', 'Warping to Sector '),
+                ('yellow', str(target_id))
+            )
+            self.out.nl(2)
+
+            await self.actions.move_trader(sector_id=target_id)
+            raise PromptTransition(next_prompt=PromptType.NONE)
+        elif self.game.sectors[target_id]:
+            self.out.write_line(
+                ('magenta', 'Auto-warping to Sector '),
+                ('yellow', str(target_id))
+            )
+            self.out.nl(2)
+            warps = self.game.plot_course(self.player.sector.id, target_id)
+            for warp in warps[1:]:
+                if not warp:
+                    breakpoint()
+                await self.actions.move_trader(sector_id=warp.id)
+
+            raise PromptTransition(next_prompt=PromptType.NONE)
+        else:
+            self.out.error("Unknown target sector")
 
     def print_sector(self, sector: Sector = None):
 

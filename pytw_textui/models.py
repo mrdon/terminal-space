@@ -50,9 +50,9 @@ class TradingCommodity:
         self.update(client)
 
     def update(self, client: TradingCommodityClient):
-        self.price = client.price if client.price else self.price
-        self.capacity = client.capacity if client.capacity else self.capacity
-        self.amount = client.amount if client.amount else self.amount
+        self.price = client.price if client.price is not None else self.price
+        self.capacity = client.capacity if client.capacity is not None else self.capacity
+        self.amount = client.amount if client.amount is not None else self.amount
         self.buying = client.buying
 
 

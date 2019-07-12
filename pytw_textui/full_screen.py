@@ -52,7 +52,7 @@ class TwApplication(Application):
         await ui_task
 
     def _init_layout(self):
-        textfield = TerminalTextArea(focus_on_click=True, scrollbar=True, width=D(min=70))
+        textfield = TerminalTextArea(focus_on_click=True, width=D(min=70))
         # textfield = TextArea(text="hi frield")
 
         def get_sector_label():

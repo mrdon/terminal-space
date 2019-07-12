@@ -1,6 +1,7 @@
 from typing import Sequence
 from typing import Tuple, List
 
+from prompt_toolkit.application import get_app
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition, is_true
 from prompt_toolkit.key_binding import KeyBindings
@@ -8,6 +9,7 @@ from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout import Margin
 from prompt_toolkit.layout import Window, UIControl, ScrollbarMargin, UIContent
+from prompt_toolkit.mouse_events import MouseEventType
 
 from pytw_textui.twbuffer import TwBuffer
 
@@ -76,7 +78,7 @@ class TerminalTextArea(UIControl):
                  focusable=True, focus_on_click=False, wrap_lines=True,
                  read_only=False, width=None, height=None,
                  dont_extend_height=False, dont_extend_width=False,
-                 line_numbers=False, get_line_prefix=None, scrollbar=False,
+                 line_numbers=False, get_line_prefix=None,
                  style='', search_field=None, preview_search=True, prompt='',
                  input_processors=None):
 
@@ -84,12 +86,6 @@ class TerminalTextArea(UIControl):
         # Writeable attributes.
 
         self.buffer = TwBuffer()
-        self.wrap_lines = wrap_lines
-
-        # if scrollbar:
-        #     right_margins = [ScrollbarMargin(display_arrows=True)]
-        # else:
-
         class MyMargin(Margin):
 
             def get_width(self, get_ui_content):
@@ -98,7 +94,10 @@ class TerminalTextArea(UIControl):
             def create_margin(self, window_render_info, width, height):
                 return [("", "  ")]
 
-        right_margins = [MyMargin()]
+        right_margins = [ScrollbarMargin(display_arrows=True)]
+
+        self.wrap_lines = wrap_lines
+
         left_margins = [MyMargin()]
 
         self.key_bindings = KeyBindings()
@@ -126,6 +125,13 @@ class TerminalTextArea(UIControl):
 
     def append_text(self, *text: Sequence[Tuple[str,str]]):
         self.buffer.insert_after(*text)
+
+    def mouse_handler(self, mouse_event):
+        if mouse_event.event_type == MouseEventType.MOUSE_UP:
+            # Focus happens on mouseup. (If we did this on mousedown, the
+            # up event will be received at the point where this widget is
+            # focused and be handled anyway.)
+            get_app().layout.current_control = self
 
     def get_key_bindings(self):
         return self.key_bindings
