@@ -31,8 +31,8 @@ class Session:
         self.action_sink = None
 
         self.bus: Optional[EventBus] = None
-        self.prompt_task: Optional[Task] = None
         self.prompt = self.start_no_prompt()
+        self.prompt_task: Optional[Task] = None
 
     async def start(self, action_sink: Callable[[str], Awaitable[None]]):
         context = {k: v for k, v in inspect.getmembers(models, inspect.isclass) if
@@ -41,6 +41,8 @@ class Session:
 
         while True:
             try:
+                if self.prompt is None:
+                    break
                 self.prompt_task = asyncio.create_task(self.prompt.cmdloop())
                 await self.prompt_task
             except CancelledError:
@@ -85,6 +87,10 @@ class Session:
     async def on_invalid_action(self, error: str):
         self.term.error(error)
         self.prompt = self.start_sector_prompt()
+        self.prompt_task.cancel()
+
+    def quit(self):
+        self.prompt = None
         self.prompt_task.cancel()
 
     def start_sector_prompt(self):

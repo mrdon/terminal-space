@@ -120,6 +120,10 @@ class TerminalTextArea(UIControl):
 
         def handle_input(event: KeyPressEvent):
             self.show_cursor = True
+            end_y = self.buffer.line_count - 1
+            end_x = self.buffer.get_line_length(end_y) - 1
+            if self.buffer.cursor.x != end_x or self.buffer.cursor.y != end_y:
+                self.buffer.cursor = Point(end_x, end_y)
             txt = event.data
             if isinstance(event, KeyPressEvent):
                 self.buffer.on_key_press(txt)
