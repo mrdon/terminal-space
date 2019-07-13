@@ -1,13 +1,13 @@
 import asyncio
 from asyncio import CancelledError
+from asyncio import Queue
 
 import aiohttp
 from prompt_toolkit import Application
 from prompt_toolkit.eventloop import use_asyncio_event_loop
 
-from pytw_textui.session import Session
-from pytw_textui.stream import Terminal
 from pytw_textui.terminal_scene import TerminalScene
+from pytw_textui.title_scene import TitleScene
 
 
 class TwApplication(Application):
@@ -16,19 +16,34 @@ class TwApplication(Application):
             mouse_support=True,
             full_screen=True)
 
+        self.title_scene = TitleScene(self)
+        self.layout = self.title_scene.layout
+
     async def start(self):
         use_asyncio_event_loop()
         ui_task = self.run_async().to_asyncio_future()
-    
-        try:
-            await self.join("localhost", "8080")
-        finally:
-            self.exit(False)
-        await ui_task
+
+        while True:
+            self.layout = self.title_scene.layout
+            self.invalidate()
+            action = await self.title_scene.start()
+            if action == "start":
+                await self.join("localhost", "8080")
+            elif action == "quit":
+                self.exit(False)
+                await ui_task
+                break
+            else:
+                breakpoint()
+
+            # self.exit(False)
+        # await ui_task
 
     async def join(self, host: str, port: str):
 
-        terminal_scene = TerminalScene(self)
+        out_queue = Queue()
+
+        terminal_scene = TerminalScene(self, lambda text: out_queue.put(text))
         self.layout = terminal_scene.layout
 
         async with aiohttp.ClientSession() as aiosession:
@@ -42,9 +57,22 @@ class TwApplication(Application):
                             print("error")
                             break
 
+                async def write_output():
+                    while True:
+                        try:
+                            msg = await out_queue.get()
+                        except InterruptedError:
+                            break
+                        await ws.send_str(msg)
+
+                write_task = asyncio.create_task(write_output())
                 asyncio.create_task(read_input())
 
                 try:
-                    await terminal_scene.session.start(lambda text: ws.send_str(text))
+                    await terminal_scene.start()
                 except CancelledError:
                     print("cancelled'")
+
+                write_task.cancel()
+
+        terminal_scene.end()

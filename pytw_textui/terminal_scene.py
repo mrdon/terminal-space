@@ -1,3 +1,6 @@
+from typing import Awaitable
+from typing import Callable
+
 from prompt_toolkit import Application
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.layout import D
@@ -17,8 +20,9 @@ from pytw_textui.ui.dynamic_label import DynamicLabel
 
 class TerminalScene:
 
-    def __init__(self, app: Application):
+    def __init__(self, app: Application, writer: Callable[[str], Awaitable[None]]):
         self.app = app
+        self.writer = writer
         textfield = TerminalTextArea(focus_on_click=True, width=D(min=70))
         self.buffer = textfield.buffer
         self.buffer.on_change(lambda: app.invalidate())
@@ -82,8 +86,8 @@ class TerminalScene:
         )
         self.textfield = textfield
 
-    def start(self):
-        return self.layout
+    async def start(self):
+        return await self.session.start(self.writer)
 
     def end(self):
         pass
