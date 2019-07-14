@@ -6,6 +6,7 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import UIContent
 from prompt_toolkit.layout import UIControl
 from prompt_toolkit.layout import Window
+from prompt_toolkit.styles import Style
 
 
 class Starfield(UIControl):
@@ -20,13 +21,14 @@ class Starfield(UIControl):
         self.window = Window(
             dont_extend_height=False,
             dont_extend_width=False,
-            content=self)
+            content=self,
+            style="bg:black")
         self.init_stars()
 
         async def tick():
             while True:
                 get_app().invalidate()
-                await asyncio.sleep(.1)
+                await asyncio.sleep(.05)
         asyncio.create_task(tick())
 
     def init_stars(self):

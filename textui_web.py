@@ -4,7 +4,7 @@ from asyncio import Queue
 
 import aiohttp
 
-from pytw_textui.full_screen import TwApplication
+from pytw_textui.app import TwApplication
 
 
 async def run():

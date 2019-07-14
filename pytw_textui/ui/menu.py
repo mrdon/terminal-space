@@ -42,7 +42,7 @@ class MenuDialog(object):
     :param buttons: A list of `Button` widgets, displayed at the bottom.
     """
     def __init__(self, body, title='', buttons: Optional[List[Button]] = None, modal=True, width=None,
-                 with_background=False, on_dismiss: Callable[[],None] = None):
+                 background=None, on_dismiss: Callable[[],None] = None):
         assert is_formatted_text(title)
         assert buttons is None or isinstance(buttons, list)
 
@@ -87,12 +87,12 @@ class MenuDialog(object):
             title=lambda: self.title,
             body=frame_body,
             style='class:dialog.body',
-            width=(None if with_background is None else width),
+            width=(None if background is None else width),
             key_bindings=kb,
             modal=modal,
         ))
 
-        if with_background:
+        if background:
             # self.container = Box(
             #     body=frame,
             #     style='class:dialog',
@@ -100,7 +100,7 @@ class MenuDialog(object):
 
             # margin = (width - max_menu_item_length + 12) // 2
             self.container = FloatContainer(
-                content=Starfield(),
+                content=background,
                 floats=[
                     Float(
                           transparent=False,

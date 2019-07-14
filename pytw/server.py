@@ -1,3 +1,4 @@
+from typing import Awaitable
 from typing import Callable
 from typing import Dict
 
@@ -16,7 +17,7 @@ class Server:
         self.game = Galaxy(config)
         self.game.start()
 
-    async def join(self, name, callback: Callable[[str], None]) -> Callable[[str], None]:
+    async def join(self, name, callback: Callable[[str], Awaitable[None]]) -> Callable[[str], Awaitable[None]]:
         player = self.game.add_player(name)
         events = ServerEvents(callback)
         moves = ShipMoves(self, player, self.game, events)

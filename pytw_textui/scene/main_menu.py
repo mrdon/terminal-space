@@ -2,26 +2,12 @@ from asyncio import Future
 from functools import partial
 
 from prompt_toolkit import Application
-from prompt_toolkit.formatted_text import FormattedText
-from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.keys import Keys
-from prompt_toolkit.layout import D
-from prompt_toolkit.layout import HSplit
 from prompt_toolkit.layout import Layout
-from prompt_toolkit.layout import VSplit
 from prompt_toolkit.widgets import Button
-from prompt_toolkit.widgets import Dialog
-from prompt_toolkit.widgets import Frame
 from prompt_toolkit.widgets import Label
-from prompt_toolkit.widgets import MenuContainer
-from prompt_toolkit.widgets import MenuItem
 
-from pytw_textui.session import Session
-from pytw_textui.stream import Terminal
-from pytw_textui.terminal_text_area import TerminalTextArea
-from pytw_textui.ui.dynamic_label import DynamicLabel
-from pytw_textui.ui.menu import MenuButton
 from pytw_textui.ui.menu import MenuDialog
+from pytw_textui.ui.starfield import Starfield
 
 
 class TitleScene:
@@ -35,10 +21,10 @@ class TitleScene:
                        dont_extend_height=True),
             buttons=[
                 Button(text="New Game", handler=partial(self.do_exit, "start")),
-                Button(text="Join Game", handler=partial(self.do_exit, "start")),
+                Button(text="Join Game", handler=partial(self.do_exit, "join")),
                 Button(text="Quit", handler=partial(self.do_exit, "quit"))
             ],
-            with_background=True,
+            background=Starfield(),
             on_dismiss=partial(self.do_exit, "quit"))
 
         self.layout = Layout(

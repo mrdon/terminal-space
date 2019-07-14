@@ -7,8 +7,10 @@ from prompt_toolkit import Application
 from prompt_toolkit.eventloop import use_asyncio_event_loop
 from prompt_toolkit.styles import Style
 
-from pytw_textui.terminal_scene import TerminalScene
-from pytw_textui.title_scene import TitleScene
+from pytw.config import GameConfig
+from pytw.server import Server
+from pytw_textui.scene.game import TerminalScene
+from pytw_textui.scene.main_menu import TitleScene
 
 
 class TwApplication(Application):
@@ -30,6 +32,8 @@ class TwApplication(Application):
             self.invalidate()
             action = await self.title_scene.start()
             if action == "start":
+                await self.start_game()
+            elif action == "join":
                 await self.join("localhost", "8080")
             elif action == "quit":
                 self.exit(False)
@@ -76,5 +80,33 @@ class TwApplication(Application):
                     pass # print("cancelled'")
 
                 write_task.cancel()
+
+        terminal_scene.end()
+
+    async def start_game(self):
+        config = GameConfig(1, "Test Game", diameter=10, seed="test",
+                                 debug_network=False)
+        server = Server(config)
+
+        server_to_app = Queue()
+
+        in_cb = await server.join("Bob", lambda text: server_to_app.put(text))
+
+        terminal_scene = TerminalScene(self, in_cb)
+        self.layout = terminal_scene.layout
+
+        async def read_from_server():
+            while True:
+                msg = await server_to_app.get()
+                await terminal_scene.session.bus(msg)
+
+        server_out_task = asyncio.create_task(read_from_server())
+
+        try:
+            await terminal_scene.start()
+        except CancelledError:
+            pass  # print("cancelled'")
+
+        server_out_task.cancel()
 
         terminal_scene.end()

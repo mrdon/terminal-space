@@ -6,7 +6,7 @@ from threading import Thread
 
 from pytw.config import GameConfig
 from pytw.server import Server
-from pytw_textui.full_screen import TwApplication
+from pytw_textui.app import TwApplication
 from pytw_textui.session import Session
 from pytw_textui.stream import Terminal
 from pytw_bot.session import BotSession
