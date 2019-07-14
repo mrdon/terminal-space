@@ -59,7 +59,7 @@ class TerminalScene:
                 Frame(body=Label(text='middle frame\ncontent')),
                 Frame(body=Label(text='left bottom frame\ncontent')),
             ], padding=1),
-        ])
+        ], style="bg:black")
 
         def do_exit():
             self.session.quit()

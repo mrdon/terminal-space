@@ -5,6 +5,7 @@ from asyncio import Queue
 import aiohttp
 from prompt_toolkit import Application
 from prompt_toolkit.eventloop import use_asyncio_event_loop
+from prompt_toolkit.styles import Style
 
 from pytw_textui.terminal_scene import TerminalScene
 from pytw_textui.title_scene import TitleScene
@@ -14,7 +15,8 @@ class TwApplication(Application):
     def __init__(self):
         super().__init__(
             mouse_support=True,
-            full_screen=True)
+            full_screen=True,
+            style=Style([('dialog', 'bg:#fff333'),]))
 
         self.title_scene = TitleScene(self)
         self.layout = self.title_scene.layout
@@ -71,7 +73,7 @@ class TwApplication(Application):
                 try:
                     await terminal_scene.start()
                 except CancelledError:
-                    print("cancelled'")
+                    pass # print("cancelled'")
 
                 write_task.cancel()
 

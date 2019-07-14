@@ -20,6 +20,7 @@ from pytw_textui.session import Session
 from pytw_textui.stream import Terminal
 from pytw_textui.terminal_text_area import TerminalTextArea
 from pytw_textui.ui.dynamic_label import DynamicLabel
+from pytw_textui.ui.menu import MenuButton
 from pytw_textui.ui.menu import MenuDialog
 
 
@@ -33,7 +34,8 @@ class TitleScene:
             body=Label(text="Body here", dont_extend_width=True, width=20,
                        dont_extend_height=True),
             buttons=[
-                Button(text="Start Game", handler=partial(self.do_exit, "start")),
+                Button(text="New Game", handler=partial(self.do_exit, "start")),
+                Button(text="Join Game", handler=partial(self.do_exit, "start")),
                 Button(text="Quit", handler=partial(self.do_exit, "quit"))
             ],
             with_background=True,
