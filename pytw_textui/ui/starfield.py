@@ -6,10 +6,12 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import UIContent
 from prompt_toolkit.layout import UIControl
 from prompt_toolkit.layout import Window
-from prompt_toolkit.styles import Style
 
 
 class Starfield(UIControl):
+    """
+    Based on http://codentronix.com/2011/05/28/3d-starfield-made-using-python-and-pygame/
+    """
 
     def __init__(self, num_stars: int = 256, max_depth: int = 12):
         self.num_stars = num_stars
@@ -70,21 +72,30 @@ class Starfield(UIControl):
                 size = (1 - float(star[2]) / self.max_depth) * 5
                 shade = (1 - float(star[2]) / self.max_depth) * 255
                 # print(f"star {id}: {x},{y}")
+
+                hex_part = hex(round(shade))[2:]
+                if len(hex_part) == 1:
+                    hex_part = f"0{hex_part}"
+
+                hex_shade = hex_part * 3
+
                 dot = "."
-                if size > 15:
-                    dot = "\u2B24"
-                elif size > 4:
-                    dot = "\u25CF"
                 if size > 3.5:
+                    parts = []
+                    for _ in range(3):
+                        val = hex(randrange(0, 255))[2:]
+                        if len(val) == 1:
+                            parts.append(f"0{val}")
+                        else:
+                            parts.append(val)
+                    hex_shade = "".join(parts)
+                    # print(f"shade: {hex_shade}")
                     dot = "\u26AB"
                 elif size > 3:
                     dot = "o"
                 elif size > 2:
                     dot = "*"
                 # print(f"size:{size}")
-                hex_shade = hex(int(shade))[2:] * 3
-                if hex_shade == "000":
-                    hex_shade = "000000"
 
                 screen[y][x] = (f"#{hex_shade}", dot)
                 # self.screen.fill((shade, shade, shade), (x, y, size, size))

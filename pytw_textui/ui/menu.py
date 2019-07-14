@@ -1,11 +1,11 @@
 from __future__ import annotations
+
 from typing import Callable
 from typing import List
 from typing import Optional
 
 from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import has_completions
-from prompt_toolkit.filters import has_focus
 from prompt_toolkit.formatted_text import is_formatted_text
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.bindings.focus import focus_next
@@ -17,7 +17,6 @@ from prompt_toolkit.layout import Float
 from prompt_toolkit.layout import FloatContainer
 from prompt_toolkit.layout import FormattedTextControl
 from prompt_toolkit.layout import HSplit
-from prompt_toolkit.layout import VSplit
 from prompt_toolkit.layout import Window
 from prompt_toolkit.layout import WindowAlign
 from prompt_toolkit.mouse_events import MouseEventType
@@ -26,16 +25,12 @@ from prompt_toolkit.widgets import Button
 from prompt_toolkit.widgets import Frame
 from prompt_toolkit.widgets import Shadow
 
-from pytw_textui.ui.starfield import Starfield
-
 
 class MenuDialog(object):
     """
-    Simple dialog window. This is the base for input dialogs, message dialogs
-    and confirmation dialogs.
-
-    Changing the title and body of the dialog is possible at runtime by
-    assigning to the `body` and `title` attributes of this class.
+    Forked from Dialog to add:
+    - Custom background
+    - Horizontal buttons for a menu
 
     :param body: Child container object.
     :param title: Text to be displayed in the heading of the dialog.
@@ -55,11 +50,8 @@ class MenuDialog(object):
         # When a button is selected, handle left/right key bindings.
         buttons_kb = KeyBindings()
         if len(buttons) > 1:
-            first_selected = has_focus(buttons[0])
-            last_selected = has_focus(buttons[-1])
-
-            buttons_kb.add('up', filter=~first_selected)(focus_previous)
-            buttons_kb.add('down', filter=~last_selected)(focus_next)
+            buttons_kb.add('up')(focus_previous)
+            buttons_kb.add('down')(focus_next)
 
         if buttons:
             frame_body = HSplit([
@@ -69,7 +61,8 @@ class MenuDialog(object):
                     padding_bottom=1),
                 # The buttons.
                 Box(body=HSplit(buttons, padding=1, key_bindings=buttons_kb),
-                    height=D(min=len(buttons), max=10, preferred=len(buttons) * 2))
+                    height=D(min=len(buttons), max=20, preferred=len(buttons) * 2 + 1),
+                    padding_bottom=1)
             ])
         else:
             frame_body = body
@@ -93,12 +86,6 @@ class MenuDialog(object):
         ))
 
         if background:
-            # self.container = Box(
-            #     body=frame,
-            #     style='class:dialog',
-            #     width=width)
-
-            # margin = (width - max_menu_item_length + 12) // 2
             self.container = FloatContainer(
                 content=background,
                 floats=[
