@@ -34,10 +34,14 @@ class Prompt:
         self.game = game
 
         self.instant_cmd = InstantCmd(term)
-        self.instant_cmd.literal('d', default=True)(self.do_d)
-        self.instant_cmd.literal('p', validator=lambda _: self.player.sector.port_id is not None)(self.do_p)
-        self.instant_cmd.literal('q')(self.do_q)
-        self.instant_cmd.regex('[0-9]+', max_length=len(str(game.config.sectors_count)))(self.do_move)
+        self.instant_cmd.literal("d", default=True)(self.do_d)
+        self.instant_cmd.literal(
+            "p", validator=lambda _: self.player.sector.port_id is not None
+        )(self.do_p)
+        self.instant_cmd.literal("q")(self.do_q)
+        self.instant_cmd.regex(
+            "[0-9]+", max_length=len(str(game.config.sectors_count))
+        )(self.do_move)
 
     async def on_ship_enter_sector(self, sector: SectorClient, ship: TraderShipClient):
         self.game.update_sector(sector)
@@ -54,13 +58,13 @@ class Prompt:
         """
         Re-display the current sector
         """
-        print_action(self.out, 'Redisplay')
+        print_action(self.out, "Redisplay")
         self.print_sector()
 
     async def do_p(self, line):
         if self.player.sector.port_id:
             self.out.nl(2)
-            self.out.print("Docking...", color='red', attrs=['blink'])
+            self.out.print("Docking...", color="red", attrs=["blink"])
             await self.actions.enter_port(port_id=self.player.sector.port.sector_id)
             raise PromptTransition(PromptType.NONE)
 
@@ -79,17 +83,17 @@ class Prompt:
     def prompt(self):
         s = self.player.ship.sector
         return (
-            ('magenta', 'Command ['),
-            ('yellow', 'TL'),
-            ('magenta', '='),
-            ('yellow', '00:00:00'),
-            ('magenta', ']'),
-            ('yellow', ':'),
-            ('magenta', '['),
-            ('cyan', str(s.id)),
-            ('magenta', '] ('),
-            ('yellow', '?=Help'),
-            ('magenta', ')? : ')
+            ("magenta", "Command ["),
+            ("yellow", "TL"),
+            ("magenta", "="),
+            ("yellow", "00:00:00"),
+            ("magenta", "]"),
+            ("yellow", ":"),
+            ("magenta", "["),
+            ("cyan", str(s.id)),
+            ("magenta", "] ("),
+            ("yellow", "?=Help"),
+            ("magenta", ")? : "),
         )
 
     async def do_move(self, target_sector):
@@ -105,8 +109,7 @@ class Prompt:
         print_action(self.out, "Move")
         if target_id in self.player.sector.warps:
             self.out.write_line(
-                ('magenta', 'Warping to Sector '),
-                ('yellow', str(target_id))
+                ("magenta", "Warping to Sector "), ("yellow", str(target_id))
             )
             self.out.nl(2)
 
@@ -119,8 +122,7 @@ class Prompt:
 
         elif self.game.sectors[target_id]:
             self.out.write_line(
-                ('magenta', 'Auto-warping to Sector '),
-                ('yellow', str(target_id))
+                ("magenta", "Auto-warping to Sector "), ("yellow", str(target_id))
             )
             self.out.nl(2)
             warps = self.game.plot_course(self.player.sector.id, target_id)
@@ -146,44 +148,50 @@ class Prompt:
 
         data = Table(rows=[])
 
-        data.rows.append(Row(
-            header=Fragment("green bold", "Sector "),
-            items=[Item([
-                Fragment("cyan", str(sector.id)),
-                Fragment("green", " in "),
-                Fragment("blue", "uncharted space")
-            ])]
-        ))
+        data.rows.append(
+            Row(
+                header=Fragment("green bold", "Sector "),
+                items=[
+                    Item(
+                        [
+                            Fragment("cyan", str(sector.id)),
+                            Fragment("green", " in "),
+                            Fragment("blue", "uncharted space"),
+                        ]
+                    )
+                ],
+            )
+        )
 
         if sector.planets:
             items = []
             for planet in sector.planets:
-                items.append(Item([
-                    Fragment("fg:yellow bold", f"({planet.planet_type}) "),
-                    Fragment("white", planet.name)
-                ]))
-            data.rows.append(Row(
-                header=Fragment("magenta", "Planets"),
-                items=items
-            ))
+                items.append(
+                    Item(
+                        [
+                            Fragment("fg:yellow bold", f"({planet.planet_type}) "),
+                            Fragment("white", planet.name),
+                        ]
+                    )
+                )
+            data.rows.append(Row(header=Fragment("magenta", "Planets"), items=items))
 
         if sector.port:
             p = sector.port
 
-            items = Item([
-                Fragment("cyan", p.name),
-                Fragment("yellow", ", "),
-                Fragment("magenta", "Class "),
-                Fragment("cyan", str(p.class_number)),
-                Fragment("magenta", " ("),
-            ])
+            items = Item(
+                [
+                    Fragment("cyan", p.name),
+                    Fragment("yellow", ", "),
+                    Fragment("magenta", "Class "),
+                    Fragment("cyan", str(p.class_number)),
+                    Fragment("magenta", " ("),
+                ]
+            )
             items.value += p.class_name_colored
             items.value.append(Fragment("magenta", ")"))
 
-            data.rows.append(Row(
-                header=Fragment("green", "Port"),
-                items=[items]
-            ))
+            data.rows.append(Row(header=Fragment("green", "Port"), items=[items]))
         #
         # other_ships = [s for s in sector.ships if s.trader.id != self.player.ship.id]
         # if other_ships:
@@ -201,32 +209,36 @@ class Prompt:
         warps: List[Fragment] = []
         for w in sector.warps:
             if w in self.player.visited:
-                warps.append(Fragment('cyan', str(w)))
+                warps.append(Fragment("cyan", str(w)))
             else:
-                warps += [Fragment('magenta', '('),
-                          Fragment('red', str(w)),
-                          Fragment('magenta', ')')]
-            warps.append(Fragment('green', ' - '))
+                warps += [
+                    Fragment("magenta", "("),
+                    Fragment("red", str(w)),
+                    Fragment("magenta", ")"),
+                ]
+            warps.append(Fragment("green", " - "))
 
-        data = Table(rows=[
-            Row(header=Fragment("green bold", "Warps to Sector(s)"),
-                items=[Item(warps[:-1])])
-        ])
+        data = Table(
+            rows=[
+                Row(
+                    header=Fragment("green bold", "Warps to Sector(s)"),
+                    items=[Item(warps[:-1])],
+                )
+            ]
+        )
         print_grid(self.out, data, separator=Fragment("yellow", ": "))
         self.out.nl()
 
     def print_ship_enter_sector(self, ship):
         self.out.nl()
         self.out.write_line(
-            ('cyan bold', ship.trader.name),
-            ('green', ' warps into th esector.')
+            ("cyan bold", ship.trader.name), ("green", " warps into th esector.")
         )
         self.out.nl()
 
     def print_ship_exit_sector(self, ship):
         self.out.nl()
         self.out.write_line(
-            ('cyan bold', ship.trader.name),
-            ('green', ' warps out of the sector.')
+            ("cyan bold", ship.trader.name), ("green", " warps out of the sector.")
         )
         self.out.nl()

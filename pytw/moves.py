@@ -144,13 +144,15 @@ class ServerEvents:
         pass
 
     async def reply(self, parent_id, *args):
-        await self.target(json_types.encodes({"type": "reply", "parent_id": parent_id, "args": args}))
+        await self.target(
+            json_types.encodes({"type": "reply", "parent_id": parent_id, "args": args})
+        )
 
 
 class ShipMoves:
-
-    def __init__(self, server: Server, player: Player, galaxy: Galaxy,
-                 events: ServerEvents):
+    def __init__(
+        self, server: Server, player: Player, galaxy: Galaxy, events: ServerEvents
+    ):
         super().__init__()
         self.galaxy = galaxy
         self.player = player
@@ -172,7 +174,8 @@ class ShipMoves:
 
         if not ship_sector.can_warp(target.id):
             await self.events.on_invalid_action(
-                error="Target sector not adjacent to ship")
+                error="Target sector not adjacent to ship"
+            )
             return
 
         try:
@@ -187,38 +190,44 @@ class ShipMoves:
             for ship in (s for s in ship_sector.ships if s.player_id != self.player.id):
                 if ship.player_id in self.server.sessions:
                     await self.server.sessions[ship.player_id].on_ship_exit_sector(
-                        sector=SectorPublic(ship_sector), ship=ship_as_trader)
+                        sector=SectorPublic(ship_sector), ship=ship_as_trader
+                    )
 
             await self.broadcast_ship_enter_sector(ship_as_trader, target_public)
         except Exception:
             traceback.print_exc()
 
     async def broadcast_player_enter_sector(self, player: Player):
-        await self.broadcast_ship_enter_sector(TraderShipPublic(player.ship),
-                                               SectorPublic(player.sector))
+        await self.broadcast_ship_enter_sector(
+            TraderShipPublic(player.ship), SectorPublic(player.sector)
+        )
 
-    async def broadcast_ship_enter_sector(self, ship_as_trader: TraderShipPublic,
-                                          target: SectorPublic):
+    async def broadcast_ship_enter_sector(
+        self, ship_as_trader: TraderShipPublic, target: SectorPublic
+    ):
         for ship in (s for s in target.ships if s.trader.id != self.player.id):
             if ship.trader.id in self.server.sessions:
                 await self.server.sessions[ship.trader.id].on_ship_enter_sector(
-                    sector=target,
-                    ship=ship_as_trader)
+                    sector=target, ship=ship_as_trader
+                )
 
     async def enter_port(self, port_id: int, **kwargs):
         port: Port = self.galaxy.sectors[port_id].port
         self.player.port = port
-        await self.server.sessions[self.player.id].on_port_enter(port=PortPublic(port),
-                                                                 player=PlayerPublic(
-                                                                     self.player))
+        await self.server.sessions[self.player.id].on_port_enter(
+            port=PortPublic(port), player=PlayerPublic(self.player)
+        )
 
     async def exit_port(self, port_id: int, **kwargs):
         port: Port = self.galaxy.sectors[port_id].port
         self.player.port = None
-        await self.server.sessions[self.player.id].on_port_exit(port=PortPublic(port),
-                                                                player=PlayerPublic(self.player))
+        await self.server.sessions[self.player.id].on_port_exit(
+            port=PortPublic(port), player=PlayerPublic(self.player)
+        )
 
-    async def sell_to_port(self, parent_id, id: int, commodity: CommodityType, amount: int, **kwargs):
+    async def sell_to_port(
+        self, parent_id, id: int, commodity: CommodityType, amount: int, **kwargs
+    ):
         ship = self.galaxy.ships[self.player.ship_id]  # type: Ship
         port = self.galaxy.sectors[ship.sector_id].port  # type: Port
 
@@ -231,7 +240,8 @@ class ShipMoves:
         trading = port.commodity(commodity)
         if not trading.buying:
             await self.events.on_invalid_action(
-                error="This port is not buying that commodity")
+                error="This port is not buying that commodity"
+            )
             return
 
         if trading.amount < amount:
@@ -249,7 +259,9 @@ class ShipMoves:
 
         await self.events.reply(parent_id, PlayerPublic(self.player), PortPublic(port))
 
-    async def buy_from_port(self, parent_id: int, id: int, commodity: CommodityType, amount: int, **kwargs):
+    async def buy_from_port(
+        self, parent_id: int, id: int, commodity: CommodityType, amount: int, **kwargs
+    ):
         ship = self.galaxy.ships[self.player.ship_id]  # type: Ship
         port = self.galaxy.sectors[ship.sector_id].port  # type: Port
 
@@ -262,7 +274,8 @@ class ShipMoves:
         trading = port.commodity(commodity)
         if trading.buying:
             await self.events.on_invalid_action(
-                error="This port is not selling that commodity")
+                error="This port is not selling that commodity"
+            )
             return
 
         if trading.amount < amount:

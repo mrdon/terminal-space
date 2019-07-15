@@ -17,11 +17,16 @@ class Server:
         self.game = Galaxy(config)
         self.game.start()
 
-    async def join(self, name, callback: Callable[[str], Awaitable[None]]) -> Callable[[str], Awaitable[None]]:
+    async def join(
+        self, name, callback: Callable[[str], Awaitable[None]]
+    ) -> Callable[[str], Awaitable[None]]:
         player = self.game.add_player(name)
         events = ServerEvents(callback)
         moves = ShipMoves(self, player, self.game, events)
-        await events.on_game_enter(player=PlayerPublic(player), config=GameConfigPublic(self.config, len(self.game.sectors)))
+        await events.on_game_enter(
+            player=PlayerPublic(player),
+            config=GameConfigPublic(self.config, len(self.game.sectors)),
+        )
         self.sessions[player.id] = events
         await moves.broadcast_player_enter_sector(player)
 

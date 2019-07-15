@@ -18,7 +18,10 @@ class TypedEncoder(json.JSONEncoder):
 
         result = o.__dict__
         if self.set_as_list:
-            result = {k: v if not isinstance(v, set) else list(v) for k, v in o.__dict__.items()}
+            result = {
+                k: v if not isinstance(v, set) else list(v)
+                for k, v in o.__dict__.items()
+            }
 
         if self.exclude_none:
             result = {k: v for k, v in result.items() if v is not None}
@@ -36,7 +39,12 @@ def decode(data: dict, cls, context=None, **kwargs):
 
 
 def encodes(obj, exclude_none=False, set_as_list=False, func_kwargs=None, **kwargs):
-    return json.dumps(obj, cls=partial(TypedEncoder, set_as_list=set_as_list, exclude_none=exclude_none, **kwargs))
+    return json.dumps(
+        obj,
+        cls=partial(
+            TypedEncoder, set_as_list=set_as_list, exclude_none=exclude_none, **kwargs
+        ),
+    )
 
 
 def _recursive_decode(obj, cls, context):
@@ -66,20 +74,22 @@ def _recursive_decode(obj, cls, context):
                 return [_recursive_decode(x, ptypes[0], context) for x in obj]
         elif issubclass(origin, dict):
             if ptypes:
-                return {k: _recursive_decode(v, ptypes[1], context) for k, v in obj.items()}
+                return {
+                    k: _recursive_decode(v, ptypes[1], context) for k, v in obj.items()
+                }
         elif issubclass(origin, tuple):
             if ptypes:
-                return _recursive_decode(obj[0], ptypes[0], context), _recursive_decode(
-                    obj[1], ptypes[1], context)
+                return (
+                    _recursive_decode(obj[0], ptypes[0], context),
+                    _recursive_decode(obj[1], ptypes[1], context),
+                )
 
     elif is_class:
         try:
-            globalns = {
-                'Dict': typing.Dict,
-                'List': typing.List,
-                'Tuple': typing.Tuple
-            }
-            hints = typing.get_type_hints(cls.__init__, localns=context, globalns=globalns)
+            globalns = {"Dict": typing.Dict, "List": typing.List, "Tuple": typing.Tuple}
+            hints = typing.get_type_hints(
+                cls.__init__, localns=context, globalns=globalns
+            )
         except AttributeError:
             raise Exception("Unable to decode class {}".format(cls))
     else:
@@ -93,7 +103,7 @@ def _recursive_decode(obj, cls, context):
     if not is_class:
         result = kwargs
     else:
-        if 'return' in kwargs:
+        if "return" in kwargs:
             del kwargs["return"]
         result = cls(**kwargs)
     return result

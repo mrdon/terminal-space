@@ -24,13 +24,15 @@ class Starfield(UIControl):
             dont_extend_height=False,
             dont_extend_width=False,
             content=self,
-            style="bg:black")
+            style="bg:black",
+        )
         self.init_stars()
 
         async def tick():
             while True:
                 get_app().invalidate()
-                await asyncio.sleep(.05)
+                await asyncio.sleep(0.05)
+
         asyncio.create_task(tick())
 
     def init_stars(self):
@@ -48,7 +50,7 @@ class Starfield(UIControl):
 
         screen = [None] * height
         for y in range(height):
-            row = [('', ' ')] * width
+            row = [("", " ")] * width
             screen[y] = row
 
         for star in self.stars:
@@ -109,9 +111,7 @@ class Starfield(UIControl):
             result = screen[i]
             return result
 
-        return UIContent(
-            get_line=get_line,
-            line_count=height)  # Something very big.
+        return UIContent(get_line=get_line, line_count=height)  # Something very big.
 
     def is_focusable(self):
         return False

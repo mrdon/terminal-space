@@ -7,13 +7,13 @@ from prompt_toolkit.layout.screen import Point
 
 class TwBuffer:
     def __init__(self):
-        self.buffer: List[List[Tuple[str,str]]] = [[]]
+        self.buffer: List[List[Tuple[str, str]]] = [[]]
         self.cursor = Point(x=0, y=0)
 
         self.input_listeners: List[Callable[[str], None]] = []
         self.change_listeners: List[Callable[[], None]] = []
 
-    def insert_after(self, *text: Sequence[Tuple[str,str]]):
+    def insert_after(self, *text: Sequence[Tuple[str, str]]):
         if not isinstance(text, (Tuple, List)):
             raise ValueError()
 
@@ -50,12 +50,12 @@ class TwBuffer:
         new_x = self.get_line_length(new_y) - 1
         self.cursor = Point(x=new_x, y=new_y)
 
-    def on_change(self, listener: Callable[[],None]):
+    def on_change(self, listener: Callable[[], None]):
         self.change_listeners.append(listener)
 
     def get_line(self, index: int) -> List[Tuple[str, str]]:
         result = [] if index >= len(self.buffer) else self.buffer[index]
-        return result + [('', ' ')]
+        return result + [("", " ")]
 
     def get_line_length(self, index: int) -> int:
         return sum(len(x[1]) for x in self.get_line(index))
@@ -85,7 +85,7 @@ class TwBuffer:
                     chars = chars[0:-num_characters]
                 else:
                     num_characters -= len(chars)
-                    chars = ''
+                    chars = ""
                 line[-1] = (last[0], chars)
 
         self._set_cursor_to_buffer_end()

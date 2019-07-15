@@ -1,5 +1,6 @@
 import random
 import math
+
 # from PIL import Image
 # from PIL.ImageDraw import Draw
 import networkx as nx

@@ -16,8 +16,9 @@ from typing import Tuple
 import json_types
 
 
-def frag_join(sep: Tuple[str, str], seq: Iterable[Tuple[str, str]]) -> Sequence[
-    Tuple[str, str]]:
+def frag_join(
+    sep: Tuple[str, str], seq: Iterable[Tuple[str, str]]
+) -> Sequence[Tuple[str, str]]:
 
     first = True
     for frag in seq:
@@ -47,7 +48,9 @@ class WaitForResponse:
 class EventBus:
     autoid = AutoIncrementId()
 
-    def __init__(self, *target: Any, context=None, sender: Callable[[str], Awaitable[None]]):
+    def __init__(
+        self, *target: Any, context=None, sender: Callable[[str], Awaitable[None]]
+    ):
         self.targets = list(target)
         self.context = context
         self.sender = sender
@@ -62,21 +65,25 @@ class EventBus:
                 target = out_self.sender
                 event_id = out_self.autoid.incr()
                 globalns = {
-                    'Dict': typing.Dict,
-                    'List': typing.List,
-                    'Type': typing.Type,
-                    'Tuple': typing.Tuple
+                    "Dict": typing.Dict,
+                    "List": typing.List,
+                    "Type": typing.Type,
+                    "Tuple": typing.Tuple,
                 }
 
-                hints = typing.get_type_hints(func, localns=self.context, globalns=globalns)
+                hints = typing.get_type_hints(
+                    func, localns=self.context, globalns=globalns
+                )
                 # breakpoint()
                 if hints and "return" in hints:
                     return_type = hints["return"]
-                    self.wait_for_ids[event_id] = WaitForResponse(type=return_type, future=Future())
+                    self.wait_for_ids[event_id] = WaitForResponse(
+                        type=return_type, future=Future()
+                    )
                 else:
                     return_type = None
 
-                obj = {"type": func.__name__, 'id': event_id}
+                obj = {"type": func.__name__, "id": event_id}
                 obj.update(kwargs)
                 data = json_types.encodes(obj, exclude_none=True, set_as_list=True)
                 resp = target(data)
@@ -89,8 +96,11 @@ class EventBus:
 
             return inner
 
-        for name, fn in {name: fn for name, fn in inspect.getmembers(cls)
-                         if isinstance(fn, types.FunctionType) and not name.startswith("__")}.items():
+        for name, fn in {
+            name: fn
+            for name, fn in inspect.getmembers(cls)
+            if isinstance(fn, types.FunctionType) and not name.startswith("__")
+        }.items():
             setattr(cls, name, sender(fn))
         return cls
 
@@ -106,13 +116,15 @@ class EventBus:
 
     async def __call__(self, data: str):
         event = json.loads(data)
-        event_type = event['type']
-        event_id = event.get('parent_id')
+        event_type = event["type"]
+        event_id = event.get("parent_id")
 
         if event_id:
             args = event["args"]
             waited = self.wait_for_ids[event_id]
-            origin = waited.type.__origin__ if hasattr(waited.type, "__origin__") else None
+            origin = (
+                waited.type.__origin__ if hasattr(waited.type, "__origin__") else None
+            )
             if origin and issubclass(origin, tuple):
                 result = []
                 for t in waited.type.__args__:

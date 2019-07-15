@@ -17,14 +17,14 @@ class AutoIncrementId:
         return result
 
 
-def methods_to_json(sink_property='target'):
+def methods_to_json(sink_property="target"):
     autoid = AutoIncrementId()
 
     def sender(func):
         @wraps(func)
         async def inner(self, **kwargs):
             target = getattr(self, sink_property)
-            obj = {"type": func.__name__, 'id': autoid.incr()}
+            obj = {"type": func.__name__, "id": autoid.incr()}
             obj.update(kwargs)
             data = json_types.encodes(obj, exclude_none=True, set_as_list=True)
             resp = target(data)
@@ -35,8 +35,11 @@ def methods_to_json(sink_property='target'):
         return inner
 
     def decorate(cls):
-        for name, fn in {name: fn for name, fn in inspect.getmembers(cls)
-                         if isinstance(fn, types.FunctionType) and name.startswith("on_")}.items():
+        for name, fn in {
+            name: fn
+            for name, fn in inspect.getmembers(cls)
+            if isinstance(fn, types.FunctionType) and name.startswith("on_")
+        }.items():
             setattr(cls, name, sender(fn))
         return cls
 
@@ -60,7 +63,7 @@ class CallMethodOnEventType:
 
     async def __call__(self, data: str):
         event = json.loads(data)
-        event_type = event['type']
+        event_type = event["type"]
         for target in self.targets:
             try:
                 func = getattr(target, event_type)

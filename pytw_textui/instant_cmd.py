@@ -14,8 +14,13 @@ if TYPE_CHECKING:
 
 
 class Matcher:
-    def __init__(self, matcher: Callable[[str], bool], default=False, max_length=0,
-                 validator=None):
+    def __init__(
+        self,
+        matcher: Callable[[str], bool],
+        default=False,
+        max_length=0,
+        validator=None,
+    ):
         self.default = default
         if validator is None:
             validator = lambda _: True
@@ -32,33 +37,50 @@ class InvalidSelectionError(Exception):
 
 
 class InstantCmd:
-
     def __init__(self, out: Terminal):
         self.matchers: Dict[Matcher, Callable[[str], Any]] = {}
         self.out = out
 
-    def regex(self, pattern, default=False, max_length=0,
-              validator: Optional[Callable[[str], bool]] = None):
-        return self.matcher(matcher=lambda txt: re.match(pattern, txt) is not None,
-                            default=default,
-                            max_length=max_length,
-                            validator=validator)
+    def regex(
+        self,
+        pattern,
+        default=False,
+        max_length=0,
+        validator: Optional[Callable[[str], bool]] = None,
+    ):
+        return self.matcher(
+            matcher=lambda txt: re.match(pattern, txt) is not None,
+            default=default,
+            max_length=max_length,
+            validator=validator,
+        )
 
-    def literal(self, char, default=False,
-                validator: Optional[Callable[[str], bool]] = None):
-        return self.matcher(matcher=lambda txt: txt.upper() == char.upper(),
-                            default=default,
-                            max_length=len(char),
-                            validator=validator)
+    def literal(
+        self, char, default=False, validator: Optional[Callable[[str], bool]] = None
+    ):
+        return self.matcher(
+            matcher=lambda txt: txt.upper() == char.upper(),
+            default=default,
+            max_length=len(char),
+            validator=validator,
+        )
 
-    def matcher(self, matcher: Callable[[str], bool], default: bool, max_length: int,
-                validator: Optional[Callable[[str], bool]] = None):
+    def matcher(
+        self,
+        matcher: Callable[[str], bool],
+        default: bool,
+        max_length: int,
+        validator: Optional[Callable[[str], bool]] = None,
+    ):
         def outer(func: Callable[[str], Any]):
-            self.matchers[Matcher(
-                matcher=matcher,
-                default=default,
-                max_length=max_length,
-                validator=validator)] = func
+            self.matchers[
+                Matcher(
+                    matcher=matcher,
+                    default=default,
+                    max_length=max_length,
+                    validator=validator,
+                )
+            ] = func
 
             async def inner(*args, **kwargs):
                 result = func(*args, **kwargs)
@@ -85,7 +107,7 @@ class InstantCmd:
                 buffer = buffer[:-1]
                 self.out.backspace(1)
                 continue
-            elif char == '\n' or char == '\r':
+            elif char == "\n" or char == "\r":
                 is_end = True
             else:
                 should_write = True
@@ -97,7 +119,7 @@ class InstantCmd:
             if len(matches) == 1:
                 matcher, func = next(iter(matches.items()))
                 if should_write:
-                    self.out.write_line(('', char))
+                    self.out.write_line(("", char))
                 if matcher.max_length == len(buffer) or is_end:
                     return await coroutine(func)(line)
             elif is_end:
@@ -108,12 +130,13 @@ class InstantCmd:
                     continue
 
                 if should_write:
-                    self.out.write_line(('', char))
+                    self.out.write_line(("", char))
                 return await coroutine(func)(line)
             elif not len(matches):
                 buffer.pop()
             elif should_write:
-                self.out.write_line(('', char))
+                self.out.write_line(("", char))
+
 
 # m = InstantCmd()
 #

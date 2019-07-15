@@ -35,8 +35,11 @@ class Session:
         self.prompt_task: Optional[Task] = None
 
     async def start(self, action_sink: Callable[[str], Awaitable[None]]):
-        context = {k: v for k, v in inspect.getmembers(models, inspect.isclass) if
-                   k.endswith("Client")}
+        context = {
+            k: v
+            for k, v in inspect.getmembers(models, inspect.isclass)
+            if k.endswith("Client")
+        }
         self.bus = EventBus(self, context=context, sender=action_sink)
 
         while True:
@@ -112,12 +115,12 @@ class Session:
 
         async def raise_quit(*_):
             raise PromptTransition(PromptType.QUIT)
-        prompt.literal('q', default=False)(raise_quit)
+
+        prompt.literal("q", default=False)(raise_quit)
         return prompt
 
 
 class NoOpPrompt:
-
     async def cmdloop(self):
         fut = Future()
         await fut

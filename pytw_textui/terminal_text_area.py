@@ -75,22 +75,40 @@ class TerminalTextArea(UIControl):
 
     :param search_field: An optional `SearchToolbar` object.
     """
-    def __init__(self, text='', multiline=True, password=False,
-                 lexer=None, auto_suggest=None, completer=None,
-                 complete_while_typing=True, accept_handler=None, history=None,
-                 focusable=True, focus_on_click=False, wrap_lines=True,
-                 read_only=False, width=None, height=None,
-                 dont_extend_height=False, dont_extend_width=False,
-                 line_numbers=False, get_line_prefix=None,
-                 style='', search_field=None, preview_search=True, prompt='',
-                 input_processors=None):
 
+    def __init__(
+        self,
+        text="",
+        multiline=True,
+        password=False,
+        lexer=None,
+        auto_suggest=None,
+        completer=None,
+        complete_while_typing=True,
+        accept_handler=None,
+        history=None,
+        focusable=True,
+        focus_on_click=False,
+        wrap_lines=True,
+        read_only=False,
+        width=None,
+        height=None,
+        dont_extend_height=False,
+        dont_extend_width=False,
+        line_numbers=False,
+        get_line_prefix=None,
+        style="",
+        search_field=None,
+        preview_search=True,
+        prompt="",
+        input_processors=None,
+    ):
 
         # Writeable attributes.
 
         self.buffer = TwBuffer()
-        class MyMargin(Margin):
 
+        class MyMargin(Margin):
             def get_width(self, get_ui_content):
                 return 2
 
@@ -116,7 +134,8 @@ class TerminalTextArea(UIControl):
             wrap_lines=Condition(lambda: is_true(self.wrap_lines)),
             left_margins=left_margins,
             right_margins=right_margins,
-            get_line_prefix=get_line_prefix)
+            get_line_prefix=get_line_prefix,
+        )
 
         def handle_input(event: KeyPressEvent):
             self.show_cursor = True
@@ -140,7 +159,9 @@ class TerminalTextArea(UIControl):
             x = 0
             if y == self.buffer.line_count - 1:
                 x = self.buffer.get_line_length(y) - 1
-            self.buffer.cursor = Point(x, min(self.buffer.line_count - 1, self.buffer.cursor.y + jump))
+            self.buffer.cursor = Point(
+                x, min(self.buffer.line_count - 1, self.buffer.cursor.y + jump)
+            )
 
         self.key_bindings.add(Keys.PageDown)(partial(scrolldown, 40))
         self.key_bindings.add(Keys.PageUp)(partial(scrollup, 40))
@@ -148,7 +169,7 @@ class TerminalTextArea(UIControl):
         self.key_bindings.add(Keys.Down)(partial(scrolldown, 1))
         self.key_bindings.add(Keys.Any)(handle_input)
 
-    def append_text(self, *text: Sequence[Tuple[str,str]]):
+    def append_text(self, *text: Sequence[Tuple[str, str]]):
         self.buffer.insert_after(*text)
 
     def mouse_handler(self, mouse_event):
@@ -179,9 +200,9 @@ class TerminalTextArea(UIControl):
         return True
 
     def create_content(self, width, height):
-        return UIContent(get_line=self.buffer.get_line,
-                         line_count=self.buffer.line_count,
-                         cursor_position=self.buffer.cursor_position,
-                         show_cursor=self.show_cursor)
-
-
+        return UIContent(
+            get_line=self.buffer.get_line,
+            line_count=self.buffer.line_count,
+            cursor_position=self.buffer.cursor_position,
+            show_cursor=self.show_cursor,
+        )

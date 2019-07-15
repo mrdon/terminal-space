@@ -20,8 +20,15 @@ class DynamicLabel(object):
     :param width: When given, use this width, rather than calculating it from
         the text size.
     """
-    def __init__(self, text_func: Callable[[], Union[str, FormattedText]], style='', width=None,
-                 dont_extend_height=True, dont_extend_width=False):
+
+    def __init__(
+        self,
+        text_func: Callable[[], Union[str, FormattedText]],
+        style="",
+        width=None,
+        dont_extend_height=True,
+        dont_extend_width=False,
+    ):
         self.text_func = text_func
 
         def get_width():
@@ -36,15 +43,15 @@ class DynamicLabel(object):
             else:
                 return width
 
-        self.formatted_text_control = FormattedTextControl(
-            text=text_func)
+        self.formatted_text_control = FormattedTextControl(text=text_func)
 
         self.window = Window(
             content=self.formatted_text_control,
             width=get_width,
-            style='class:label ' + style,
+            style="class:label " + style,
             dont_extend_height=dont_extend_height,
-            dont_extend_width=dont_extend_width)
+            dont_extend_width=dont_extend_width,
+        )
 
     def __pt_container__(self):
         return self.window

@@ -11,25 +11,27 @@ from pytw_textui.ui.starfield import Starfield
 
 
 class TitleScene:
-
     def __init__(self, app: Application):
         self.app = app
 
         dialog = MenuDialog(
             title="My title",
-            body=Label(text="Body here", dont_extend_width=True, width=20,
-                       dont_extend_height=True),
+            body=Label(
+                text="Body here",
+                dont_extend_width=True,
+                width=20,
+                dont_extend_height=True,
+            ),
             buttons=[
                 Button(text="New Game", handler=partial(self.do_exit, "start")),
                 Button(text="Join Game", handler=partial(self.do_exit, "join")),
-                Button(text="Quit", handler=partial(self.do_exit, "quit"))
+                Button(text="Quit", handler=partial(self.do_exit, "quit")),
             ],
             background=Starfield(),
-            on_dismiss=partial(self.do_exit, "quit"))
-
-        self.layout = Layout(
-            dialog
+            on_dismiss=partial(self.do_exit, "quit"),
         )
+
+        self.layout = Layout(dialog)
         self.future = Future()
 
     def do_exit(self, result, *_):

@@ -95,7 +95,9 @@ class TradingCommodity:
 
     def update(self, client: TradingCommodityClient):
         self.price = client.price if client.price is not None else self.price
-        self.capacity = client.capacity if client.capacity is not None else self.capacity
+        self.capacity = (
+            client.capacity if client.capacity is not None else self.capacity
+        )
         self.amount = client.amount if client.amount is not None else self.amount
         self.buying = client.buying
 
@@ -122,7 +124,7 @@ class Port:
         "SBS": 5,
         "BSS": 6,
         "SSS": 7,
-        "BBB": 8
+        "BBB": 8,
     }
 
     def __init__(self, game: Game, client: PortClient):
@@ -161,7 +163,7 @@ class Port:
     def class_name_colored(self) -> List[Fragment]:
         line = []
         for c in self.class_name:
-            line.append(Fragment("cyan", c) if c == 'B' else Fragment("green", c))
+            line.append(Fragment("cyan", c) if c == "B" else Fragment("green", c))
         return line
 
     @property
@@ -244,7 +246,9 @@ class Sector:
 
     @property
     def ships(self) -> List[TraderShip]:
-        return [self._game.trader_ships.get(ship_id) for ship_id in self.trader_ship_ids]
+        return [
+            self._game.trader_ships.get(ship_id) for ship_id in self.trader_ship_ids
+        ]
 
     @property
     def planets(self) -> List[Planet]:

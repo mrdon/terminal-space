@@ -9,6 +9,5 @@ class PromptType(Enum):
 
 
 class PromptTransition(Exception):
-
     def __init__(self, next_prompt: PromptType):
         self.next = next_prompt

@@ -10,32 +10,241 @@ from pytw.config import GameConfig
 from pytw.graph import gen_hex_center, remove_warps
 from pytw.util import AutoIdDict
 
-PORT_NAMES = ["Aegis", "Aeon", "Aeris", "Babylon", "Aeternitas", "Aether", "Alliance", "Alpha", "Amazone", "Ancestor",
-              "Anemone", "Angel", "Anomaly", "Apollo", "Arcadia", "Arcadis", "Arch", "Architect", "Ark", "Artemis",
-              "Asphodel", "Asteria", "Astraeus", "Athena", "Atlas", "Atmos", "Aura", "Aurora", "Awe", "Azura", "Azure",
-              "Baldur", "Beacon", "Blue Moon", "Borealis", "Burrow", "Caelestis", "Canaan", "Century", "Chrono",
-              "Chronos", "Crescent", "Curator", "Curiosity", "Data", "Dawn", "Daydream", "Demeter", "Dogma", "Dream",
-              "Dune", "Ecstacys", "Eir", "Elyse", "Elysium", "Empyrea", "Ender", "Enigma", "Eos", "Epiphany", "Epitome",
-              "Erebus", "Escort", "Eternis", "Eternity", "Exposure", "Fable", "Father", "Fauna", "Felicity", "Flora",
-              "Fortuna", "Frontier", "Gaia", "Galaxy", "Genesis", "Genius", "Glory", "Guardian", "Halo", "Heirloom",
-              "Helios", "Hemera", "Hera", "Heritage", "Hermes", "Horus", "Hymn", "Hyperion", "Hypnos", "Ignis",
-              "Illume", "Inception", "Infinity", "Isis", "Janus", "Juno", "Legacy", "Liberty", "Lore", "Lucent",
-              "Lumina", "Luminous", "Luna", "Lunis", "Magni", "Mammoth", "Mani", "Marvel", "Memento", "Minerva",
-              "Miracle", "Mother", "Muse", "Mystery", "Mythos", "Nebula", "Nemesis", "Nemo", "Neo", "Nero", "Nimbus",
-              "Nott", "Nova", "Novis", "Nox", "Nyx", "Odyssey", "Olympus", "Omega", "Oracle", "Orbital", "Origin",
-              "Orphan", "Osiris", "Outlander", "Parable", "Paradox", "Paragon", "Pedigree", "Phantasm", "Phantom",
-              "Phenomenon", "Phoenix", "Pilgrim", "Pioneer", "Prism", "Prodigy", "Prometheus", "Prophecy", "Proto",
-              "Radiance", "Rebus", "Relic", "Revelation", "Reverie", "Rogue", "Rune", "Saga", "Sancus", "Scout",
-              "Selene", "Serenity", "Settler", "Shangris", "Shepherd", "Shu", "Sol", "Solas", "Spectacle", "Specter",
-              "Spectrum", "Spire", "Symbolica", "Tartarus", "Terminus", "Terra", "Terran", "Terraria", "Themis",
-              "Tiberius", "Titan", "Titanus", "Torus", "Tranquility", "Trivia", "Utopis", "Valhalla", "Vanguard",
-              "Vanquish", "Vesta", "Vestige", "Victoria", "Virtue", "Visage", "Voyage", "Vulcan", "Warden", "Yggdrasil",
-              "Zeus", "Zion"]
-PORT_SUFFIXES = ["", "Station", "Base", "Terminal", "Outpost"] + [str(x) for x in range(0, 9)]
+PORT_NAMES = [
+    "Aegis",
+    "Aeon",
+    "Aeris",
+    "Babylon",
+    "Aeternitas",
+    "Aether",
+    "Alliance",
+    "Alpha",
+    "Amazone",
+    "Ancestor",
+    "Anemone",
+    "Angel",
+    "Anomaly",
+    "Apollo",
+    "Arcadia",
+    "Arcadis",
+    "Arch",
+    "Architect",
+    "Ark",
+    "Artemis",
+    "Asphodel",
+    "Asteria",
+    "Astraeus",
+    "Athena",
+    "Atlas",
+    "Atmos",
+    "Aura",
+    "Aurora",
+    "Awe",
+    "Azura",
+    "Azure",
+    "Baldur",
+    "Beacon",
+    "Blue Moon",
+    "Borealis",
+    "Burrow",
+    "Caelestis",
+    "Canaan",
+    "Century",
+    "Chrono",
+    "Chronos",
+    "Crescent",
+    "Curator",
+    "Curiosity",
+    "Data",
+    "Dawn",
+    "Daydream",
+    "Demeter",
+    "Dogma",
+    "Dream",
+    "Dune",
+    "Ecstacys",
+    "Eir",
+    "Elyse",
+    "Elysium",
+    "Empyrea",
+    "Ender",
+    "Enigma",
+    "Eos",
+    "Epiphany",
+    "Epitome",
+    "Erebus",
+    "Escort",
+    "Eternis",
+    "Eternity",
+    "Exposure",
+    "Fable",
+    "Father",
+    "Fauna",
+    "Felicity",
+    "Flora",
+    "Fortuna",
+    "Frontier",
+    "Gaia",
+    "Galaxy",
+    "Genesis",
+    "Genius",
+    "Glory",
+    "Guardian",
+    "Halo",
+    "Heirloom",
+    "Helios",
+    "Hemera",
+    "Hera",
+    "Heritage",
+    "Hermes",
+    "Horus",
+    "Hymn",
+    "Hyperion",
+    "Hypnos",
+    "Ignis",
+    "Illume",
+    "Inception",
+    "Infinity",
+    "Isis",
+    "Janus",
+    "Juno",
+    "Legacy",
+    "Liberty",
+    "Lore",
+    "Lucent",
+    "Lumina",
+    "Luminous",
+    "Luna",
+    "Lunis",
+    "Magni",
+    "Mammoth",
+    "Mani",
+    "Marvel",
+    "Memento",
+    "Minerva",
+    "Miracle",
+    "Mother",
+    "Muse",
+    "Mystery",
+    "Mythos",
+    "Nebula",
+    "Nemesis",
+    "Nemo",
+    "Neo",
+    "Nero",
+    "Nimbus",
+    "Nott",
+    "Nova",
+    "Novis",
+    "Nox",
+    "Nyx",
+    "Odyssey",
+    "Olympus",
+    "Omega",
+    "Oracle",
+    "Orbital",
+    "Origin",
+    "Orphan",
+    "Osiris",
+    "Outlander",
+    "Parable",
+    "Paradox",
+    "Paragon",
+    "Pedigree",
+    "Phantasm",
+    "Phantom",
+    "Phenomenon",
+    "Phoenix",
+    "Pilgrim",
+    "Pioneer",
+    "Prism",
+    "Prodigy",
+    "Prometheus",
+    "Prophecy",
+    "Proto",
+    "Radiance",
+    "Rebus",
+    "Relic",
+    "Revelation",
+    "Reverie",
+    "Rogue",
+    "Rune",
+    "Saga",
+    "Sancus",
+    "Scout",
+    "Selene",
+    "Serenity",
+    "Settler",
+    "Shangris",
+    "Shepherd",
+    "Shu",
+    "Sol",
+    "Solas",
+    "Spectacle",
+    "Specter",
+    "Spectrum",
+    "Spire",
+    "Symbolica",
+    "Tartarus",
+    "Terminus",
+    "Terra",
+    "Terran",
+    "Terraria",
+    "Themis",
+    "Tiberius",
+    "Titan",
+    "Titanus",
+    "Torus",
+    "Tranquility",
+    "Trivia",
+    "Utopis",
+    "Valhalla",
+    "Vanguard",
+    "Vanquish",
+    "Vesta",
+    "Vestige",
+    "Victoria",
+    "Virtue",
+    "Visage",
+    "Voyage",
+    "Vulcan",
+    "Warden",
+    "Yggdrasil",
+    "Zeus",
+    "Zion",
+]
+PORT_SUFFIXES = ["", "Station", "Base", "Terminal", "Outpost"] + [
+    str(x) for x in range(0, 9)
+]
 
-PLANET_SUFFIXES = ["II", "III", "IV", "V", "V1", "VII", "VIII", "IX", "Alpha", "Beta", "Omega", "Gamma", "Zeta"]
+PLANET_SUFFIXES = [
+    "II",
+    "III",
+    "IV",
+    "V",
+    "V1",
+    "VII",
+    "VIII",
+    "IX",
+    "Alpha",
+    "Beta",
+    "Omega",
+    "Gamma",
+    "Zeta",
+]
 
-Cost = namedtuple("Cost", ["credits", "fuel_ore", "organics", "equipment", "colonists", "time", "citadel_level_min"])
+Cost = namedtuple(
+    "Cost",
+    [
+        "credits",
+        "fuel_ore",
+        "organics",
+        "equipment",
+        "colonists",
+        "time",
+        "citadel_level_min",
+    ],
+)
 
 
 class Region:
@@ -48,16 +257,51 @@ class Region:
 
 class FuelOreRegion(Region):
     costs = {
-        1: Cost(credits=1000, fuel_ore=1000, organics=1000, equipment=1000, colonists=1000, time=1,
-                citadel_level_min=1),
-        2: Cost(credits=2000, fuel_ore=2000, organics=2000, equipment=2000, colonists=2000, time=2,
-                citadel_level_min=1),
-        3: Cost(credits=3000, fuel_ore=3000, organics=3000, equipment=3000, colonists=3000, time=4,
-                citadel_level_min=1),
-        4: Cost(credits=4000, fuel_ore=4000, organics=4000, equipment=4000, colonists=4000, time=7,
-                citadel_level_min=1),
-        5: Cost(credits=5000, fuel_ore=5000, organics=5000, equipment=5000, colonists=5000, time=11,
-                citadel_level_min=1)
+        1: Cost(
+            credits=1000,
+            fuel_ore=1000,
+            organics=1000,
+            equipment=1000,
+            colonists=1000,
+            time=1,
+            citadel_level_min=1,
+        ),
+        2: Cost(
+            credits=2000,
+            fuel_ore=2000,
+            organics=2000,
+            equipment=2000,
+            colonists=2000,
+            time=2,
+            citadel_level_min=1,
+        ),
+        3: Cost(
+            credits=3000,
+            fuel_ore=3000,
+            organics=3000,
+            equipment=3000,
+            colonists=3000,
+            time=4,
+            citadel_level_min=1,
+        ),
+        4: Cost(
+            credits=4000,
+            fuel_ore=4000,
+            organics=4000,
+            equipment=4000,
+            colonists=4000,
+            time=7,
+            citadel_level_min=1,
+        ),
+        5: Cost(
+            credits=5000,
+            fuel_ore=5000,
+            organics=5000,
+            equipment=5000,
+            colonists=5000,
+            time=11,
+            citadel_level_min=1,
+        ),
     }
 
     def __init__(self, level):
@@ -65,24 +309,24 @@ class FuelOreRegion(Region):
         self.output = 50
 
 
-PlanetTypeArgs = namedtuple("PlanetTypeArgs", ["name", "fuel_ore_boost", "organics_boost", "equipment_boost"])
+PlanetTypeArgs = namedtuple(
+    "PlanetTypeArgs", ["name", "fuel_ore_boost", "organics_boost", "equipment_boost"]
+)
 
 
 class PlanetType(PlanetTypeArgs, enum.Enum):
-    M = PlanetTypeArgs(name="M",
-                       fuel_ore_boost=10,
-                       organics_boost=10,
-                       equipment_boost=10)
-    V = PlanetTypeArgs(name="V",
-                       fuel_ore_boost=20,
-                       organics_boost=3,
-                       equipment_boost=5)
+    M = PlanetTypeArgs(
+        name="M", fuel_ore_boost=10, organics_boost=10, equipment_boost=10
+    )
+    V = PlanetTypeArgs(name="V", fuel_ore_boost=20, organics_boost=3, equipment_boost=5)
 
 
 class Planet:
     MAX_REGIONS = 10
 
-    def __init__(self, game, planet_type: PlanetType, name: str, owner_id: Optional[int]):
+    def __init__(
+        self, game, planet_type: PlanetType, name: str, owner_id: Optional[int]
+    ):
         self.game: Galaxy = game
         self.name = name
         self.id = 0
@@ -128,9 +372,17 @@ class TradingCommodity:
     @property
     def price(self):
         if self.buying:
-            return round(self.type.buy_offer + ((self.amount / self.capacity) * self.type.buy_offer) / 2, 2)
+            return round(
+                self.type.buy_offer
+                + ((self.amount / self.capacity) * self.type.buy_offer) / 2,
+                2,
+            )
         else:
-            return round(self.type.sell_cost - ((self.amount / self.capacity) * self.type.sell_cost) / 2, 2)
+            return round(
+                self.type.sell_cost
+                - ((self.amount / self.capacity) * self.type.sell_cost) / 2,
+                2,
+            )
 
 
 class PortClass(enum.Enum):
@@ -149,7 +401,7 @@ class PortClass(enum.Enum):
         self.buying = {
             CommodityType.fuel_ore: buying_fuel_ore,
             CommodityType.organics: buying_organics,
-            CommodityType.equipment: buying_equipment
+            CommodityType.equipment: buying_equipment,
         }
 
     @classmethod
@@ -178,7 +430,6 @@ def random_port_type(rnd: random.Random) -> PortClass:
 
 
 class Port:
-
     def __init__(self, sector_id: int, name: str, commodities: List[TradingCommodity]):
         self.commodities = commodities
         self.name = name
@@ -254,24 +505,40 @@ class Player:
         self.ship_id = new_ship_id
 
 
-ShipTypeArgs = namedtuple("ShipTypeArgs", ["name", "cost", "fighters_max", "fighters_per_wave", "holds_initial",
-                                           "holds_max", "warp_cost", "offensive_odds", "defensive_odds"])
+ShipTypeArgs = namedtuple(
+    "ShipTypeArgs",
+    [
+        "name",
+        "cost",
+        "fighters_max",
+        "fighters_per_wave",
+        "holds_initial",
+        "holds_max",
+        "warp_cost",
+        "offensive_odds",
+        "defensive_odds",
+    ],
+)
 
 
 class ShipType(ShipTypeArgs, enum.Enum):
-    MERCHANT_CRUISER = ShipTypeArgs(name="Merchant Cruiser",
-                                    cost=41300,
-                                    fighters_max=2500,
-                                    fighters_per_wave=750,
-                                    holds_initial=200,
-                                    holds_max=75,
-                                    warp_cost=2,
-                                    offensive_odds=1,
-                                    defensive_odds=1)
+    MERCHANT_CRUISER = ShipTypeArgs(
+        name="Merchant Cruiser",
+        cost=41300,
+        fighters_max=2500,
+        fighters_per_wave=750,
+        holds_initial=200,
+        holds_max=75,
+        warp_cost=2,
+        offensive_odds=1,
+        defensive_odds=1,
+    )
 
 
 class Ship:
-    def __init__(self, game, ship_type: ShipType, name: str, player_id: int, sector_id: int):
+    def __init__(
+        self, game, ship_type: ShipType, name: str, player_id: int, sector_id: int
+    ):
         self.id = 0
         self.name = name
         self.player_owner_id = player_id
@@ -318,10 +585,14 @@ class Galaxy:
         self._graph = None
 
     def add_player(self, name):
-        p = self.players.append(Player(self, name, credits=self.config.player.initial_credits))
+        p = self.players.append(
+            Player(self, name, credits=self.config.player.initial_credits)
+        )
         sec = self.sectors[self.config.player.initial_sector_id]
         ship_type = ShipType[self.config.player.initial_ship_type.upper()]
-        s = self.ships.append(Ship(self, ship_type, 'Foo', player_id=p.id, sector_id=sec.id))
+        s = self.ships.append(
+            Ship(self, ship_type, "Foo", player_id=p.id, sector_id=sec.id)
+        )
         p.ship_id = s.id
         p.visit_sector(sec.id)
         s.move_sector(sec.id)
@@ -369,7 +640,9 @@ class Galaxy:
                     name = rnd.choice(PORT_NAMES)
                     suffix = rnd.choice(PLANET_SUFFIXES)
                     type = rnd.choice(list(PlanetType))
-                    planet = self.planets.append(Planet(self, type, f"{name} {suffix}", None))
+                    planet = self.planets.append(
+                        Planet(self, type, f"{name} {suffix}", None)
+                    )
                     planets.append(planet)
 
             self.sectors[sector_id] = Sector(self, sector_id, n, warps, port, planets)

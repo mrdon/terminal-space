@@ -4,5 +4,5 @@ from pytw.web import WebGame
 
 webgame = WebGame()
 app = Application()
-app.router.add_route('GET', '/', webgame.handler)
+app.router.add_route("GET", "/", webgame.handler)
 run_app(app)

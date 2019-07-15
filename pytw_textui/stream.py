@@ -27,7 +27,7 @@ class Terminal:
         self.buffer.insert_after(*text)
 
     def print(self, text: str, color=None, bg=None, attrs=None):
-        style = ''
+        style = ""
         if color:
             style += color
         if bg:
@@ -37,7 +37,7 @@ class Terminal:
             style += " "
             style += " ".join(attrs)
 
-        lines = text.split(r'\n|\r|\r\n')
+        lines = text.split(r"\n|\r|\r\n")
         self.write_lines(*[[(style, line)] for line in lines])
 
     def nl(self, times=1):
@@ -46,7 +46,7 @@ class Terminal:
 
     def error(self, msg):
         self.nl()
-        self.print(msg, 'red')
+        self.print(msg, "red")
         self.nl()
         self.nl()
 
@@ -106,13 +106,13 @@ def print_grid(stream: Terminal, data: Table, separator: Fragment):
     for row in data.rows:
         stream.write_line(
             astuple(row.header),
-            ('', ' ' * (header_len - len(row.header.text))),
-            astuple(separator)
+            ("", " " * (header_len - len(row.header.text))),
+            astuple(separator),
         )
         pad = False
         for item in row.items:
             if pad:
-                stream.write_line(('', " " * (header_len + 2)))
+                stream.write_line(("", " " * (header_len + 2)))
             else:
                 pad = True
 
@@ -136,7 +136,6 @@ class Option:
 
 
 class SimpleMenuCmd:
-
     def __init__(self, stream: Terminal, default: str, option_order: Iterable[str]):
         self.stream = stream
         self.default = default
@@ -146,25 +145,26 @@ class SimpleMenuCmd:
         for key in option_order:
             key = key.lower()
             fn = getattr(self, "do_{}".format(key))
-            self.options[key] = Option(key=key, description=fn.__doc__.strip(),
-                                       function=fn)
+            self.options[key] = Option(
+                key=key, description=fn.__doc__.strip(), function=fn
+            )
             self.instant_prompt.literal(key, key.upper() == default.upper())(fn)
 
     async def cmdloop(self):
         self.stream.nl()
         for opt in self.options.values():
             self.stream.write_line(
-                ('magenta', '<'),
-                ('green', opt.key.upper()),
-                ('magenta', '>'),
-                ('green', opt.description)
+                ("magenta", "<"),
+                ("green", opt.key.upper()),
+                ("magenta", ">"),
+                ("green", opt.description),
             )
             self.stream.nl()
         self.stream.nl()
         while True:
             self.stream.write_line(
-                ('magenta', 'Enter your choice '),
-                ('bold yellow', f'[{self.default.upper()}] ')
+                ("magenta", "Enter your choice "),
+                ("bold yellow", f"[{self.default.upper()}] "),
             )
             try:
                 await self.instant_prompt.cmdloop()
@@ -190,21 +190,17 @@ class SimpleMenuCmd:
 async def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, str]]):
     for cmd, text in options:
         stream.write_line(
-            ('magenta', '<'),
-            ('green', cmd),
-            ('magenta', '> '),
-            ('green', text)
+            ("magenta", "<"), ("green", cmd), ("magenta", "> "), ("green", text)
         )
         stream.nl()
     stream.nl()
 
     while True:
         stream.write_line(
-            ('magenta', 'Enter your choice '),
-            ('bold yellow', f'[{default}] ')
+            ("magenta", "Enter your choice "), ("bold yellow", f"[{default}] ")
         )
         val = await stream.read_key()
-        if val == '':
+        if val == "":
             val = default
 
         if val not in [o[0] for o in options]:
@@ -213,7 +209,13 @@ async def menu_prompt(stream: Terminal, default: str, options: Tuple[Tuple[str, 
             return val
 
 
-async def amount_prompt(stream: Terminal, prompt: Sequence[Tuple[str, str]], default: int, min: int, max: int):
+async def amount_prompt(
+    stream: Terminal,
+    prompt: Sequence[Tuple[str, str]],
+    default: int,
+    min: int,
+    max: int,
+):
     _write_prompt_and_default(default, prompt, stream)
     prompt = InstantCmd(stream)
 
@@ -224,25 +226,24 @@ async def amount_prompt(stream: Terminal, prompt: Sequence[Tuple[str, str]], def
         else:
             return value
 
-    prompt.regex('[0-9]+', max_length=len(str(max)))(handle_input)
-    prompt.literal('y', default=True)(lambda _: default)
+    prompt.regex("[0-9]+", max_length=len(str(max)))(handle_input)
+    prompt.literal("y", default=True)(lambda _: default)
     return await prompt.cmdloop()
 
 
 def _write_prompt_and_default(default, prompt, stream):
     stream.write_line(*prompt)
     stream.write_line(
-        ('magenta', '['),
-        ('yellow', str(default)),
-        ('magenta', ']?'),
-        ('', ' ')
+        ("magenta", "["), ("yellow", str(default)), ("magenta", "]?"), ("", " ")
     )
 
 
-async def yesno_prompt(stream: Terminal, prompt: Sequence[Tuple[str, str]], default: bool, **kwargs):
-    _write_prompt_and_default('Y' if default else 'N', prompt, stream)
+async def yesno_prompt(
+    stream: Terminal, prompt: Sequence[Tuple[str, str]], default: bool, **kwargs
+):
+    _write_prompt_and_default("Y" if default else "N", prompt, stream)
 
     val = await stream.read_key()
     if not val.strip():
         val = default
-    return val is True or 'y' == val.lower()
+    return val is True or "y" == val.lower()

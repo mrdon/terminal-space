@@ -18,7 +18,8 @@ class TwApplication(Application):
         super().__init__(
             mouse_support=True,
             full_screen=True,
-            style=Style([('dialog', 'bg:#fff333'),]))
+            style=Style([("dialog", "bg:#fff333")]),
+        )
 
         self.title_scene = TitleScene(self)
         self.layout = self.title_scene.layout
@@ -53,7 +54,7 @@ class TwApplication(Application):
         self.layout = terminal_scene.layout
 
         async with aiohttp.ClientSession() as aiosession:
-            async with aiosession.ws_connect(f'ws://{host}:{port}/') as ws:
+            async with aiosession.ws_connect(f"ws://{host}:{port}/") as ws:
 
                 async def read_input():
                     async for msg in ws:
@@ -77,15 +78,16 @@ class TwApplication(Application):
                 try:
                     await terminal_scene.start()
                 except CancelledError:
-                    pass # print("cancelled'")
+                    pass  # print("cancelled'")
 
                 write_task.cancel()
 
         terminal_scene.end()
 
     async def start_game(self):
-        config = GameConfig(1, "Test Game", diameter=10, seed="test",
-                                 debug_network=False)
+        config = GameConfig(
+            1, "Test Game", diameter=10, seed="test", debug_network=False
+        )
         server = Server(config)
 
         server_to_app = Queue()
