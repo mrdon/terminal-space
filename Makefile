@@ -10,3 +10,6 @@ format: ## Format the imports and code
 	echo Formatting code
 	venv/bin/black -l 88 -t py37 pytw pytw_textui json_types *.py
 
+virtualenv: ## Create a virtualenv
+	python3.7 -m venv venv
+	venv/bin/pip install -r requirements.dev.txt

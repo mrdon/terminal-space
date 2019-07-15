@@ -1,16 +1,27 @@
 import asyncio
 from asyncio import CancelledError
 from asyncio import Queue
+from typing import Tuple
 
 import aiohttp
 from prompt_toolkit import Application
 from prompt_toolkit.eventloop import use_asyncio_event_loop
+from prompt_toolkit.layout.screen import Size
 from prompt_toolkit.styles import Style
 
 from pytw.config import GameConfig
 from pytw.server import Server
 from pytw_textui.scene.game import TerminalScene
 from pytw_textui.scene.main_menu import TitleScene
+
+
+class InvalidScreenSize(Exception):
+    def __init__(self, expected: Size, actual: Size):
+        self.expected = expected
+        self.actual = actual
+
+    def __str__(self):
+        return f"Invalid screen size: expected {self.expected} but was {self.actual}"
 
 
 class TwApplication(Application):
@@ -23,6 +34,11 @@ class TwApplication(Application):
 
         self.title_scene = TitleScene(self)
         self.layout = self.title_scene.layout
+
+        actual: Size = self.output.get_size()
+        expected = Size(rows=40, columns=120)
+        if actual.rows < expected.rows or actual.columns < expected.columns:
+            raise InvalidScreenSize(expected, actual)
 
     async def start(self):
         use_asyncio_event_loop()
