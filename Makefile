@@ -13,3 +13,9 @@ format: ## Format the imports and code
 virtualenv: ## Create a virtualenv
 	python3.7 -m venv venv
 	venv/bin/pip install -r requirements.dev.txt
+
+run: ## Run the app
+	venv/bin/python cli-app.py
+
+run-server: ## Run the standalone server, needed for joining a game
+	venv/bin/python server.py
