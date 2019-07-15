@@ -108,7 +108,7 @@ class TwApplication(Application):
 
         server_to_app = Queue()
 
-        in_cb = await server.join("Bob", lambda text: server_to_app.put(text))
+        in_cb = await server.join("Bob", lambda text: asyncio.coroutine(server_to_app.put_nowait)(text))
 
         terminal_scene = TerminalScene(self, in_cb)
         self.layout = terminal_scene.layout

@@ -42,24 +42,27 @@ class Session:
         }
         self.bus = EventBus(self, context=context, sender=action_sink)
 
+        waiting_prompt = None
         while True:
             try:
                 if self.prompt is None:
                     break
+                waiting_prompt = self.prompt
                 self.prompt_task = asyncio.create_task(self.prompt.cmdloop())
                 await self.prompt_task
             except CancelledError:
                 pass
             except PromptTransition as e:
                 self.bus.remove_event_listener(self.prompt)
-                if e.next == PromptType.SECTOR:
-                    self.prompt = self.start_sector_prompt()
-                elif e.next == PromptType.PORT:
-                    self.prompt = self.start_port_prompt()
-                elif e.next == PromptType.QUIT:
-                    break
-                elif e.next == PromptType.NONE:
-                    self.prompt = self.start_no_prompt()
+                if waiting_prompt and waiting_prompt == self.prompt:
+                    if e.next == PromptType.SECTOR:
+                        self.prompt = self.start_sector_prompt()
+                    elif e.next == PromptType.PORT:
+                        self.prompt = self.start_port_prompt()
+                    elif e.next == PromptType.QUIT:
+                        break
+                    elif e.next == PromptType.NONE:
+                        self.prompt = self.start_no_prompt()
 
     async def on_game_enter(self, player: PlayerClient, config: GameConfigClient):
         # print("on game enter!!!!!!!!!!!!!")
@@ -124,3 +127,6 @@ class NoOpPrompt:
     async def cmdloop(self):
         fut = Future()
         await fut
+
+    def __str__(self):
+        return "No prompt"
