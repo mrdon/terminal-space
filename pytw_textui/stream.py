@@ -1,23 +1,15 @@
-import inspect
-import re
-import sys
-from asyncio import Future
 from asyncio import Queue
-from collections import namedtuple
+from asyncio import Queue
 from dataclasses import astuple
 from dataclasses import dataclass
-from types import FunctionType, MethodType
 from typing import Iterable
-from typing import Tuple, NamedTuple, Callable, List, Sequence
+from typing import Tuple, Callable, List, Sequence
 
-from colorclass import Color
 from prompt_toolkit import ANSI
 from prompt_toolkit.formatted_text import to_formatted_text
-from termcolor import colored
 
 from pytw_textui.instant_cmd import InstantCmd, InvalidSelectionError
 from pytw_textui.twbuffer import TwBuffer
-from pytw_textui.util import frag_join
 
 
 class Terminal:

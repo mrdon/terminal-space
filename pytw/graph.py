@@ -1,7 +1,7 @@
 import random
 import math
-from PIL import Image
-from PIL.ImageDraw import Draw
+# from PIL import Image
+# from PIL.ImageDraw import Draw
 import networkx as nx
 from networkx.algorithms import shortest_path_length
 
@@ -39,17 +39,17 @@ def gen_hex_center(size):
     return g.to_directed()
 
 
-def gen_2d_grid(size):
-    g = nx.grid_2d_graph(size, size)
-    x = y = n = 0
-    for n in g:
-        x, y = n
-    if x > 0 and y > 0:
-        g.add_edge(n, (x - 1, y - 1))
-    if x < size - 1 and y < size - 1:
-        g.add_edge(n, (x + 1, y + 1))
-
-    return g.to_directed()
+# def gen_2d_grid(size):
+#     g = nx.grid_2d_graph(size, size)
+#     x = y = n = 0
+#     for n in g:
+#         x, y = n
+#     if x > 0 and y > 0:
+#         g.add_edge(n, (x - 1, y - 1))
+#     if x < size - 1 and y < size - 1:
+#         g.add_edge(n, (x + 1, y + 1))
+#
+#     return g.to_directed()
 
 
 def remove_warps(g, density, rnd: random.Random):
@@ -106,100 +106,100 @@ def remove_warps(g, density, rnd: random.Random):
     # print('Done')
 
 
-def draw_hex_grid(g):
-    class HexagonGenerator(object):
-        """Returns a hexagon generator for hexagons of the specified size."""
-
-        def __init__(self, edge_length):
-            self.edge_length = edge_length
-
-        @property
-        def col_width(self):
-            return self.edge_length * 3
-
-        @property
-        def row_height(self):
-            return math.sin(math.pi / 3) * self.edge_length
-
-        def __call__(self, r, c):
-            x = (c + 0.5 * (r % 2)) * self.col_width
-            y = r * self.row_height
-            # noinspection PyArgumentList
-            for angle in range(0, 360, 60):
-                x += math.cos(math.radians(angle)) * self.edge_length
-                y += math.sin(math.radians(angle)) * self.edge_length
-                yield x + self.edge_length, y
-
-    image = Image.new('RGB', (1500, 1000), 'white')
-    draw = Draw(image)
-    hexagon_generator = HexagonGenerator(40)
-    for n in g.nodes_iter():
-        row, col = n
-        hexagon = hexagon_generator(row, col)
-        draw.polygon(list(hexagon), outline='black', fill='red')
-
-    image.show()
-
-
-def draw_square_grid(g):
-    size = 10
-
-    def node_to_pixel(node):
-        return node[0] * (size * 2) + int(size / 2), node[1] * (size * 2) + int(size / 2)
-
-    size = 20
-    uni_width = math.sqrt(g.number_of_nodes())
-    image = Image.new('RGB', (size * 2 * uni_width, size * 2 * uni_width), 'white')
-
-    draw = Draw(image)
-    for e in g.edges_iter():
-        src, target = e
-        draw.line((node_to_pixel(src), node_to_pixel(target)), fill='blue', width=1)
-    for n in g.nodes_iter():
-        row, col = n
-        draw.ellipse((row * (size * 2), col * (size * 2), row * (size * 2) + size, col * size * 2 + size),
-                     outline='black', fill='red')
-    image.show()
-
-
-def draw_hex_circles(g, uni_radius):
-
-    size = 50
-    centerx = int(size * uni_radius * 2)
-    centery = int(size * uni_radius * 2)
-
-    def node_to_pixel(node):
-        x, y = node
-        x_offset = 0 if y == 0 else math.fabs(y) * size * (math.fabs(y) / y)
-        return x * (size * 2) + int(size / 2) + centerx + x_offset, y * (size * 2) + int(size / 2) + centery
-
-    image = Image.new('RGB', (size * 2 * uni_radius * 2, size * 2 * uni_radius * 2), 'white')
-
-    draw = Draw(image)
-    for e in g.edges_iter():
-        src, target = e
-        draw.line((node_to_pixel(src), node_to_pixel(target)), fill='blue', width=1)
-    for n in g.nodes_iter():
-        col, row = n
-        col_offset = 0 if row == 0 else math.fabs(row) * size * (math.fabs(row) / row)
-        draw.ellipse((col * (size * 2) + centerx + col_offset, row * (size * 2) + centery,
-                      col * (size * 2) + size + centerx + col_offset, row * size * 2 + size + centery),
-                     outline='black', fill='red')
-
-    for n in g.nodes_iter():
-        draw.text(node_to_pixel(n), str(n), fill='black')
-    image.show()
-
-
-if __name__ == "__main__":
-    uni_size = 35
-    density = 3.5
-
-    rnd = random.Random(2345)
-    g = gen_hex_center(10)
-    remove_warps(g, 3.5, rnd)
-    draw_hex_circles(g, uni_size)
-
-    #nx.draw_networkx(g, node_size=40)
-    #pyplot.show()
-    # draw_networkx(g)
+# def draw_hex_grid(g):
+#     class HexagonGenerator(object):
+#         """Returns a hexagon generator for hexagons of the specified size."""
+#
+#         def __init__(self, edge_length):
+#             self.edge_length = edge_length
+#
+#         @property
+#         def col_width(self):
+#             return self.edge_length * 3
+#
+#         @property
+#         def row_height(self):
+#             return math.sin(math.pi / 3) * self.edge_length
+#
+#         def __call__(self, r, c):
+#             x = (c + 0.5 * (r % 2)) * self.col_width
+#             y = r * self.row_height
+#             # noinspection PyArgumentList
+#             for angle in range(0, 360, 60):
+#                 x += math.cos(math.radians(angle)) * self.edge_length
+#                 y += math.sin(math.radians(angle)) * self.edge_length
+#                 yield x + self.edge_length, y
+#
+#     image = Image.new('RGB', (1500, 1000), 'white')
+#     draw = Draw(image)
+#     hexagon_generator = HexagonGenerator(40)
+#     for n in g.nodes_iter():
+#         row, col = n
+#         hexagon = hexagon_generator(row, col)
+#         draw.polygon(list(hexagon), outline='black', fill='red')
+#
+#     image.show()
+#
+#
+# def draw_square_grid(g):
+#     size = 10
+#
+#     def node_to_pixel(node):
+#         return node[0] * (size * 2) + int(size / 2), node[1] * (size * 2) + int(size / 2)
+#
+#     size = 20
+#     uni_width = math.sqrt(g.number_of_nodes())
+#     image = Image.new('RGB', (size * 2 * uni_width, size * 2 * uni_width), 'white')
+#
+#     draw = Draw(image)
+#     for e in g.edges_iter():
+#         src, target = e
+#         draw.line((node_to_pixel(src), node_to_pixel(target)), fill='blue', width=1)
+#     for n in g.nodes_iter():
+#         row, col = n
+#         draw.ellipse((row * (size * 2), col * (size * 2), row * (size * 2) + size, col * size * 2 + size),
+#                      outline='black', fill='red')
+#     image.show()
+#
+#
+# def draw_hex_circles(g, uni_radius):
+#
+#     size = 50
+#     centerx = int(size * uni_radius * 2)
+#     centery = int(size * uni_radius * 2)
+#
+#     def node_to_pixel(node):
+#         x, y = node
+#         x_offset = 0 if y == 0 else math.fabs(y) * size * (math.fabs(y) / y)
+#         return x * (size * 2) + int(size / 2) + centerx + x_offset, y * (size * 2) + int(size / 2) + centery
+#
+#     image = Image.new('RGB', (size * 2 * uni_radius * 2, size * 2 * uni_radius * 2), 'white')
+#
+#     draw = Draw(image)
+#     for e in g.edges_iter():
+#         src, target = e
+#         draw.line((node_to_pixel(src), node_to_pixel(target)), fill='blue', width=1)
+#     for n in g.nodes_iter():
+#         col, row = n
+#         col_offset = 0 if row == 0 else math.fabs(row) * size * (math.fabs(row) / row)
+#         draw.ellipse((col * (size * 2) + centerx + col_offset, row * (size * 2) + centery,
+#                       col * (size * 2) + size + centerx + col_offset, row * size * 2 + size + centery),
+#                      outline='black', fill='red')
+#
+#     for n in g.nodes_iter():
+#         draw.text(node_to_pixel(n), str(n), fill='black')
+#     image.show()
+#
+#
+# if __name__ == "__main__":
+#     uni_size = 35
+#     density = 3.5
+#
+#     rnd = random.Random(2345)
+#     g = gen_hex_center(10)
+#     remove_warps(g, 3.5, rnd)
+#     draw_hex_circles(g, uni_size)
+#
+#     #nx.draw_networkx(g, node_size=40)
+#     #pyplot.show()
+#     # draw_networkx(g)

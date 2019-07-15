@@ -9,7 +9,6 @@ from tabulate import TableFormat
 from tabulate import tabulate
 
 from pytw_textui.game import Game
-from pytw_textui.models import CommodityType
 from pytw_textui.models import PlayerClient
 from pytw_textui.models import Port
 from pytw_textui.models import PortClient

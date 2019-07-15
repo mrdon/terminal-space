@@ -5,7 +5,6 @@ from functools import wraps
 from typing import Any
 
 import json_types
-from colorclass import Color
 
 
 class AutoIncrementId:
