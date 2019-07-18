@@ -8,10 +8,10 @@ from prompt_toolkit.eventloop import use_asyncio_event_loop
 from prompt_toolkit.layout.screen import Size
 from prompt_toolkit.styles import Style
 
-from pytw.server.config import GameConfig
-from pytw.server.server import Server
-from pytw.client.scene.game import TerminalScene
-from pytw.client.scene.main_menu import TitleScene
+from tspace.server.config import GameConfig
+from tspace.server.server import Server
+from tspace.client.scene.game import TerminalScene
+from tspace.client.scene.main_menu import TitleScene
 
 
 class InvalidScreenSize(Exception):

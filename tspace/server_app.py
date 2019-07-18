@@ -1,6 +1,6 @@
 from aiohttp.web import Application, run_app
 
-from pytw.server.web import WebGame
+from tspace.server.web import WebGame
 
 def main():
     webgame = WebGame()

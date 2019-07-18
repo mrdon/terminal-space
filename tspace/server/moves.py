@@ -4,21 +4,21 @@ import traceback
 import typing
 from typing import Callable
 
-from pytw import json_types
+from tspace import json_types
 
-from pytw.server.config import GameConfig
-from pytw.server.planet import CommodityType
-from pytw.server.planet import Galaxy
-from pytw.server.planet import Planet
-from pytw.server.planet import Player
-from pytw.server.planet import Port
-from pytw.server.planet import Sector
-from pytw.server.planet import Ship
-from pytw.server.planet import TradingCommodity
-from pytw.server.util import methods_to_json
+from tspace.server.config import GameConfig
+from tspace.server.planet import CommodityType
+from tspace.server.planet import Galaxy
+from tspace.server.planet import Planet
+from tspace.server.planet import Player
+from tspace.server.planet import Port
+from tspace.server.planet import Sector
+from tspace.server.planet import Ship
+from tspace.server.planet import TradingCommodity
+from tspace.server.util import methods_to_json
 
 if typing.TYPE_CHECKING:
-    from pytw.server.server import Server
+    from tspace.server.server import Server
 
 
 class GameConfigPublic:

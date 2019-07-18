@@ -8,7 +8,7 @@ here = abspath(dirname(__file__))
 
 
 def get_version():
-    file_globals = runpy.run_path("pytw/version.py")
+    file_globals = runpy.run_path("tspace/version.py")
     return file_globals['__version__']
 
 
@@ -21,22 +21,22 @@ LONG_DESCRIPTION = read('README.md')
 REQUIREMENTS = read('requirements.txt')
 
 setup(
-    name='pytw',
+    name='terminal-space',
     version=get_version(),
     description='A text-based space trading game',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     author='Don Brown',
     author_email='mrdon@twdata.org',
-    url='https://bitbucket.org/mrdon/pytw',
+    url='https://bitbucket.org/mrdon/terminal-space',
     license='aplv2',
     install_requires=REQUIREMENTS,
-    packages=find_namespace_packages(include=['pytw.*']),
+    packages=find_namespace_packages(include=['tspace.*']),
     include_package_data=True,
     entry_points="""
         [console_scripts]
-        pytw-client = pytw.client_app:main
-        pytw-server = pytw.server_app:main
+        tspace-client = tspace.client_app:main
+        tspace-server = tspace.server_app:main
     """,
     python_requires='>=3.7',
     classifiers=[

@@ -9,10 +9,10 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
-from pytw.client.stream import Fragment
+from tspace.client.stream import Fragment
 
 if typing.TYPE_CHECKING:
-    from pytw.client.game import Game
+    from tspace.client.game import Game
 
 
 @dataclass

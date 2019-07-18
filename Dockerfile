@@ -11,4 +11,4 @@ COPY . /usr/src/app
 
 EXPOSE 8080
 WORKDIR /usr/src/app
-CMD ["python", "-m", "pytw.client_app"]
+CMD ["python", "-m", "tspace.client_app"]

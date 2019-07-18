@@ -13,7 +13,7 @@ from typing import Iterable
 from typing import Sequence
 from typing import Tuple
 
-from pytw import json_types
+from tspace import json_types
 
 
 def frag_join(

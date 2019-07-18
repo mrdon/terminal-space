@@ -4,21 +4,21 @@ from typing import List
 
 import networkx as nx
 
-from pytw.client.models import GameConfig
-from pytw.client.models import Planet
-from pytw.client.models import PlanetClient
-from pytw.client.models import Player
-from pytw.client.models import PlayerClient
-from pytw.client.models import Port
-from pytw.client.models import PortClient
-from pytw.client.models import Sector
-from pytw.client.models import SectorClient
-from pytw.client.models import Ship
-from pytw.client.models import ShipClient
-from pytw.client.models import Trader
-from pytw.client.models import TraderClient
-from pytw.client.models import TraderShip
-from pytw.client.models import TraderShipClient
+from tspace.client.models import GameConfig
+from tspace.client.models import Planet
+from tspace.client.models import PlanetClient
+from tspace.client.models import Player
+from tspace.client.models import PlayerClient
+from tspace.client.models import Port
+from tspace.client.models import PortClient
+from tspace.client.models import Sector
+from tspace.client.models import SectorClient
+from tspace.client.models import Ship
+from tspace.client.models import ShipClient
+from tspace.client.models import Trader
+from tspace.client.models import TraderClient
+from tspace.client.models import TraderShip
+from tspace.client.models import TraderShipClient
 
 
 class Game:

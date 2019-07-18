@@ -1,6 +1,6 @@
 import asyncio
 
-from pytw.client.app import TwApplication
+from tspace.client.app import TwApplication
 
 
 async def run():

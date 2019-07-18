@@ -12,10 +12,10 @@ from prompt_toolkit.widgets import Label
 from prompt_toolkit.widgets import MenuContainer
 from prompt_toolkit.widgets import MenuItem
 
-from pytw.client.session import Session
-from pytw.client.stream import Terminal
-from pytw.client.terminal_text_area import TerminalTextArea
-from pytw.client.ui.dynamic_label import DynamicLabel
+from tspace.client.session import Session
+from tspace.client.stream import Terminal
+from tspace.client.terminal_text_area import TerminalTextArea
+from tspace.client.ui.dynamic_label import DynamicLabel
 
 
 class TerminalScene:

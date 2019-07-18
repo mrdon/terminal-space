@@ -12,7 +12,7 @@ from prompt_toolkit.layout import Window, UIControl, ScrollbarMargin, UIContent
 from prompt_toolkit.layout.screen import Point
 from prompt_toolkit.mouse_events import MouseEventType
 
-from pytw.client.twbuffer import TwBuffer
+from tspace.client.twbuffer import TwBuffer
 
 
 class TerminalTextArea(UIControl):

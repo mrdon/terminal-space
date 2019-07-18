@@ -1,20 +1,20 @@
 from typing import List
 
-from pytw.client.game import Game
-from pytw.client.instant_cmd import InstantCmd
-from pytw.client.instant_cmd import InvalidSelectionError
-from pytw.client.models import Sector
-from pytw.client.models import SectorClient
-from pytw.client.models import TraderShipClient
-from pytw.client.prompts import PromptTransition
-from pytw.client.prompts import PromptType
-from pytw.client.stream import Fragment
-from pytw.client.stream import Item
-from pytw.client.stream import Row
-from pytw.client.stream import Table
-from pytw.client.stream import Terminal
-from pytw.client.stream import print_action
-from pytw.client.stream import print_grid
+from tspace.client.game import Game
+from tspace.client.instant_cmd import InstantCmd
+from tspace.client.instant_cmd import InvalidSelectionError
+from tspace.client.models import Sector
+from tspace.client.models import SectorClient
+from tspace.client.models import TraderShipClient
+from tspace.client.prompts import PromptTransition
+from tspace.client.prompts import PromptType
+from tspace.client.stream import Fragment
+from tspace.client.stream import Item
+from tspace.client.stream import Row
+from tspace.client.stream import Table
+from tspace.client.stream import Terminal
+from tspace.client.stream import print_action
+from tspace.client.stream import print_grid
 
 
 class Actions:

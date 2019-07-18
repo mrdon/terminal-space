@@ -3,8 +3,8 @@
 block_cipher = None
 
 
-a = Analysis(['pytw/client_app.py'],
-             pathex=['/home/mrdon/dev/pytw'],
+a = Analysis(['tspace/client_app.py'],
+             pathex=['/home/mrdon/dev/tspace'],
              binaries=[],
              datas=[],
              hiddenimports=[],
@@ -23,7 +23,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='pytw-client',
+          name='tspace-client',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,

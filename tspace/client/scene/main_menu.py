@@ -6,8 +6,8 @@ from prompt_toolkit.layout import Layout
 from prompt_toolkit.widgets import Button
 from prompt_toolkit.widgets import Label
 
-from pytw.client.ui.menu import MenuDialog
-from pytw.client.ui.starfield import Starfield
+from tspace.client.ui.menu import MenuDialog
+from tspace.client.ui.starfield import Starfield
 
 
 class TitleScene:
@@ -15,10 +15,10 @@ class TitleScene:
         self.app = app
 
         dialog = MenuDialog(
-            title="My title",
+            title="Terminal Space",
             body=Label(
-                text="Body here",
-                dont_extend_width=True,
+                text="   A text-based\n space trading game",
+                dont_extend_width=False,
                 width=20,
                 dont_extend_height=True,
             ),

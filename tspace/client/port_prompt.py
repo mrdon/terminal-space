@@ -8,18 +8,18 @@ from tabulate import Line
 from tabulate import TableFormat
 from tabulate import tabulate
 
-from pytw.client.game import Game
-from pytw.client.models import PlayerClient
-from pytw.client.models import Port
-from pytw.client.models import PortClient
-from pytw.client.models import Ship
-from pytw.client.prompts import PromptTransition
-from pytw.client.prompts import PromptType
-from pytw.client.stream import SimpleMenuCmd
-from pytw.client.stream import Terminal
-from pytw.client.stream import amount_prompt
-from pytw.client.stream import print_action
-from pytw.client.stream import yesno_prompt
+from tspace.client.game import Game
+from tspace.client.models import PlayerClient
+from tspace.client.models import Port
+from tspace.client.models import PortClient
+from tspace.client.models import Ship
+from tspace.client.prompts import PromptTransition
+from tspace.client.prompts import PromptType
+from tspace.client.stream import SimpleMenuCmd
+from tspace.client.stream import Terminal
+from tspace.client.stream import amount_prompt
+from tspace.client.stream import print_action
+from tspace.client.stream import yesno_prompt
 
 
 class Actions:

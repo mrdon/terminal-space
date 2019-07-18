@@ -7,17 +7,17 @@ from typing import Awaitable
 from typing import Callable
 from typing import Optional
 
-from pytw.client import models, sector_prompt, port_prompt
-from pytw.client.game import Game
-from pytw.client.instant_cmd import InstantCmd
-from pytw.client.models import GameConfig
-from pytw.client.models import GameConfigClient
-from pytw.client.models import PlayerClient
-from pytw.client.models import PortClient
-from pytw.client.prompts import PromptTransition
-from pytw.client.prompts import PromptType
-from pytw.client.stream import Terminal
-from pytw.client.util import EventBus
+from tspace.client import models, sector_prompt, port_prompt
+from tspace.client.game import Game
+from tspace.client.instant_cmd import InstantCmd
+from tspace.client.models import GameConfig
+from tspace.client.models import GameConfigClient
+from tspace.client.models import PlayerClient
+from tspace.client.models import PortClient
+from tspace.client.prompts import PromptTransition
+from tspace.client.prompts import PromptType
+from tspace.client.stream import Terminal
+from tspace.client.util import EventBus
 
 
 class Session:
