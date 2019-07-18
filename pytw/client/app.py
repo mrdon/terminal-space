@@ -1,7 +1,6 @@
 import asyncio
 from asyncio import CancelledError
 from asyncio import Queue
-from typing import Tuple
 
 import aiohttp
 from prompt_toolkit import Application
@@ -9,10 +8,10 @@ from prompt_toolkit.eventloop import use_asyncio_event_loop
 from prompt_toolkit.layout.screen import Size
 from prompt_toolkit.styles import Style
 
-from pytw.config import GameConfig
-from pytw.server import Server
-from pytw_textui.scene.game import TerminalScene
-from pytw_textui.scene.main_menu import TitleScene
+from pytw.server.config import GameConfig
+from pytw.server.server import Server
+from pytw.client.scene.game import TerminalScene
+from pytw.client.scene.main_menu import TitleScene
 
 
 class InvalidScreenSize(Exception):
@@ -128,3 +127,10 @@ class TwApplication(Application):
         server_out_task.cancel()
 
         terminal_scene.end()
+
+if __name__ == "__main__":
+    async def run():
+        app = TwApplication()
+        await app.start()
+
+    asyncio.get_event_loop().run_until_complete(run())

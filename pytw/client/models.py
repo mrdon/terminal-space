@@ -9,10 +9,10 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
-from pytw_textui.stream import Fragment
+from pytw.client.stream import Fragment
 
 if typing.TYPE_CHECKING:
-    from pytw_textui.game import Game
+    from pytw.client.game import Game
 
 
 @dataclass

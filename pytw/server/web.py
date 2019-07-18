@@ -1,8 +1,8 @@
 import aiohttp
 from aiohttp import web
 
-from pytw.config import GameConfig
-from pytw.server import Server
+from pytw.server.config import GameConfig
+from pytw.server.server import Server
 
 
 class WebGame:

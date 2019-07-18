@@ -2,12 +2,12 @@ from typing import Awaitable
 from typing import Callable
 from typing import Dict
 
-from pytw.config import GameConfig
-from pytw.moves import GameConfigPublic
-from pytw.moves import PlayerPublic
-from pytw.moves import ShipMoves, ServerEvents
-from pytw.planet import Galaxy
-from pytw.util import CallMethodOnEventType
+from pytw.server.config import GameConfig
+from pytw.server.moves import GameConfigPublic
+from pytw.server.moves import PlayerPublic
+from pytw.server.moves import ShipMoves, ServerEvents
+from pytw.server.planet import Galaxy
+from pytw.server.util import CallMethodOnEventType
 
 
 class Server:

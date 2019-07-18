@@ -4,7 +4,7 @@ import types
 from functools import wraps
 from typing import Any
 
-import json_types
+from pytw import json_types
 
 
 class AutoIncrementId:

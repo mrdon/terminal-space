@@ -6,8 +6,8 @@ from prompt_toolkit.layout import Layout
 from prompt_toolkit.widgets import Button
 from prompt_toolkit.widgets import Label
 
-from pytw_textui.ui.menu import MenuDialog
-from pytw_textui.ui.starfield import Starfield
+from pytw.client.ui.menu import MenuDialog
+from pytw.client.ui.starfield import Starfield
 
 
 class TitleScene:

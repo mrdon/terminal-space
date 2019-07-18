@@ -1,10 +1,8 @@
 from functools import partial
 from typing import Sequence
-from typing import Tuple, List
+from typing import Tuple
 
-import math
 from prompt_toolkit.application import get_app
-from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition, is_true
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
@@ -14,7 +12,7 @@ from prompt_toolkit.layout import Window, UIControl, ScrollbarMargin, UIContent
 from prompt_toolkit.layout.screen import Point
 from prompt_toolkit.mouse_events import MouseEventType
 
-from pytw_textui.twbuffer import TwBuffer
+from pytw.client.twbuffer import TwBuffer
 
 
 class TerminalTextArea(UIControl):

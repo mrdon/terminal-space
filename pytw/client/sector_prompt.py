@@ -1,20 +1,20 @@
 from typing import List
 
-from pytw_textui.game import Game
-from pytw_textui.instant_cmd import InstantCmd
-from pytw_textui.instant_cmd import InvalidSelectionError
-from pytw_textui.models import Sector
-from pytw_textui.models import SectorClient
-from pytw_textui.models import TraderShipClient
-from pytw_textui.prompts import PromptTransition
-from pytw_textui.prompts import PromptType
-from pytw_textui.stream import Fragment
-from pytw_textui.stream import Item
-from pytw_textui.stream import Row
-from pytw_textui.stream import Table
-from pytw_textui.stream import Terminal
-from pytw_textui.stream import print_action
-from pytw_textui.stream import print_grid
+from pytw.client.game import Game
+from pytw.client.instant_cmd import InstantCmd
+from pytw.client.instant_cmd import InvalidSelectionError
+from pytw.client.models import Sector
+from pytw.client.models import SectorClient
+from pytw.client.models import TraderShipClient
+from pytw.client.prompts import PromptTransition
+from pytw.client.prompts import PromptType
+from pytw.client.stream import Fragment
+from pytw.client.stream import Item
+from pytw.client.stream import Row
+from pytw.client.stream import Table
+from pytw.client.stream import Terminal
+from pytw.client.stream import print_action
+from pytw.client.stream import print_grid
 
 
 class Actions:

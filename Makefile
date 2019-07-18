@@ -1,4 +1,4 @@
-.PHONY: run tunnel client help dist
+.PHONY: run tunnel client help bin release
 
 # Help system from https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 .DEFAULT_GOAL := help
@@ -18,15 +18,24 @@ virtualenv: ## Create a virtualenv
 	venv/bin/pip install -r requirements.dev.txt
 
 run: ## Run the app
-	venv/bin/python cli-app.py
+	venv/bin/python pytw/client_app.py
 
 run-server: ## Run the standalone server, needed for joining a game
-	venv/bin/python server.py
+	venv/bin/python pytw/server_app.py
 
 run-docker: ## Run the app in a docker container
 	docker build -t pytw .
 	echo "Run the app with:\n\ndocker run -it pytw"
 
-dist: ## Build a single file distribution
-	venv/bin/pyinstaller --onefile cli-app.py
-	echo "Run the app with:\n\ndist/cli-app"
+bin: ## Build a single file distribution
+	venv/bin/pyinstaller --onefile pytw-server.spec
+	venv/bin/pyinstaller --onefile pytw-client.spec
+	echo "Run the app with:\n\ndist/pytw-client"
+
+release: clean  ## Release the game to pypi
+	bumpversion release --allow-dirty
+	python setup.py sdist
+	python setup.py bdist_wheel
+	twine upload dist/*
+	bumpversion --no-tag patch
+	git push origin master --tags

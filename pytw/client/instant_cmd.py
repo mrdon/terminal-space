@@ -10,7 +10,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pytw_textui import Terminal
+    from .stream import Terminal
 
 
 class Matcher:

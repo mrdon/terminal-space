@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['cli-app.py'],
+a = Analysis(['pytw/client_app.py'],
              pathex=['/home/mrdon/dev/pytw'],
              binaries=[],
              datas=[],
@@ -23,7 +23,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='cli-app',
+          name='pytw-client',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,

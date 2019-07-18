@@ -2,3 +2,6 @@
 nose
 black
 pyinstaller
+twine
+bumpversion
+wheel

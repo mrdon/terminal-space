@@ -8,18 +8,18 @@ from tabulate import Line
 from tabulate import TableFormat
 from tabulate import tabulate
 
-from pytw_textui.game import Game
-from pytw_textui.models import PlayerClient
-from pytw_textui.models import Port
-from pytw_textui.models import PortClient
-from pytw_textui.models import Ship
-from pytw_textui.prompts import PromptTransition
-from pytw_textui.prompts import PromptType
-from pytw_textui.stream import SimpleMenuCmd
-from pytw_textui.stream import Terminal
-from pytw_textui.stream import amount_prompt
-from pytw_textui.stream import print_action
-from pytw_textui.stream import yesno_prompt
+from pytw.client.game import Game
+from pytw.client.models import PlayerClient
+from pytw.client.models import Port
+from pytw.client.models import PortClient
+from pytw.client.models import Ship
+from pytw.client.prompts import PromptTransition
+from pytw.client.prompts import PromptType
+from pytw.client.stream import SimpleMenuCmd
+from pytw.client.stream import Terminal
+from pytw.client.stream import amount_prompt
+from pytw.client.stream import print_action
+from pytw.client.stream import yesno_prompt
 
 
 class Actions:

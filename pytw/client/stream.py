@@ -1,5 +1,4 @@
 from asyncio import Queue
-from asyncio import Queue
 from dataclasses import astuple
 from dataclasses import dataclass
 from typing import Iterable
@@ -8,8 +7,8 @@ from typing import Tuple, Callable, List, Sequence
 from prompt_toolkit import ANSI
 from prompt_toolkit.formatted_text import to_formatted_text
 
-from pytw_textui.instant_cmd import InstantCmd, InvalidSelectionError
-from pytw_textui.twbuffer import TwBuffer
+from pytw.client.instant_cmd import InstantCmd, InvalidSelectionError
+from pytw.client.twbuffer import TwBuffer
 
 
 class Terminal:

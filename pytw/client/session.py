@@ -7,20 +7,17 @@ from typing import Awaitable
 from typing import Callable
 from typing import Optional
 
-from pytw_textui import models
-from pytw_textui import port_prompt
-from pytw_textui import sector_prompt
-from pytw_textui.game import Game
-from pytw_textui.instant_cmd import InstantCmd
-from pytw_textui.models import GameConfig
-from pytw_textui.models import GameConfigClient
-from pytw_textui.models import PlayerClient
-from pytw_textui.models import PortClient
-from pytw_textui.models import SectorClient
-from pytw_textui.prompts import PromptTransition
-from pytw_textui.prompts import PromptType
-from pytw_textui.stream import Terminal
-from pytw_textui.util import EventBus
+from pytw.client import models, sector_prompt, port_prompt
+from pytw.client.game import Game
+from pytw.client.instant_cmd import InstantCmd
+from pytw.client.models import GameConfig
+from pytw.client.models import GameConfigClient
+from pytw.client.models import PlayerClient
+from pytw.client.models import PortClient
+from pytw.client.prompts import PromptTransition
+from pytw.client.prompts import PromptType
+from pytw.client.stream import Terminal
+from pytw.client.util import EventBus
 
 
 class Session:

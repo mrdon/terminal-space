@@ -11,4 +11,4 @@ COPY . /usr/src/app
 
 EXPOSE 8080
 WORKDIR /usr/src/app
-CMD python /usr/src/app/cli-app.py
+CMD ["python", "-m", "pytw.client_app"]

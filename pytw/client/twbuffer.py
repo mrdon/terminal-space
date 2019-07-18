@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Callable
 from typing import Tuple, List, Sequence
 
