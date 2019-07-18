@@ -50,4 +50,4 @@ You can see all the possible commands by running:
 
     make 
     
-Development is often streamed on my [Twitch stream](https://www.twitch.tv/mrdonbrown/) and I'm twitter as @mrdonbrown.
+Development is often streamed on my [Twitch stream](https://www.twitch.tv/mrdonbrown/) and I'm on twitter as @mrdonbrown.
