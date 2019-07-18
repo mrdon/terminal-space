@@ -10,9 +10,15 @@ Terminal Space is a text-based space trading and exploration game that was inspi
 2. Single and multi-player modes (with standalone server)
 3. TradeWars 2002 concepts like sectors, planets, ports, and ships
 
-It currently implements the TradeWars basics of a universe, sectors, and ports, 
-but will soon be taken in new directions.
+It currently implements the TradeWars basics of a universe, sectors, and ports, but will soon be taken in new directions.
 
+### Roadmap
+
+ * 0.1 (released) - Basic client/server model with structured text ui and simple TW2002 gameplay
+ * 0.2 - Explore turn-based combat ala JRPGs like Octopath.  Focus on game mechanics.
+ * 0.3 - Server and client saving, maybe host a game
+ * 0.4 - Who knows...
+ 
 ## Installation
 
 To run it, install Python 3.7 and run:
@@ -44,4 +50,4 @@ You can see all the possible commands by running:
 
     make 
     
-Development is often streamed on my [Twitch stream](https://www.twitch.tv/mrdonbrown/)
+Development is often streamed on my [Twitch stream](https://www.twitch.tv/mrdonbrown/) and I'm twitter as @mrdonbrown.
