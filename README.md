@@ -20,12 +20,6 @@ To run it, install Python 3.7 and run:
 
     pip3 install terminal-space
 
-To install it locally, run:
-
-    make virtualenv
-    source venv/bin/activate
-    python setup.py develop
-
 ## Running the game
 
 With the game installed, simply run
@@ -36,7 +30,19 @@ To run the server standalone (needed for the "Join Game" option), run:
 
     tspace-server
     
-   
-To run it in a clean docker container (with it installed locally), run:
+## Development 
 
-    make run-docker
+To install it locally, run:
+
+    make virtualenv
+    source venv/bin/activate
+ 
+To run the client, type:
+
+    make run
+    
+You can see all the possible commands by running:
+
+    make 
+    
+Development is often streamed on my [Twitch stream](https://www.twitch.tv/mrdonbrown/)
