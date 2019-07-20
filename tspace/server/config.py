@@ -7,14 +7,8 @@ class PortConfig:
 
 
 class PlayerConfig:
-    def __init__(
-        self,
-        initial_sector_id: int = 1,
-        initial_ship_type: str = "merchant_cruiser",
-        initial_credits: int = 2000,
-    ):
+    def __init__(self, initial_sector_id: int = 1, initial_credits: int = 2000):
         self.initial_credits = initial_credits
-        self.initial_ship_type = initial_ship_type
         self.initial_sector_id = initial_sector_id
 
 

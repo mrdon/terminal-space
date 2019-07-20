@@ -12,7 +12,7 @@ class WebGame:
         )
         self.server = Server(self.config)
 
-    async def handler(self, request):
+    async def handler(self, request: web.Request):
         print("websocket connected")
         ws = web.WebSocketResponse()
         await ws.prepare(request)
@@ -21,7 +21,9 @@ class WebGame:
             print(f"OUT: {text}")
             await ws.send_str(text)
 
-        in_cb = await self.server.join("Bob", cb)
+        player_name = request.query["name"]
+
+        in_cb = await self.server.join(player_name, cb)
 
         print("server joined")
         async for msg in ws:

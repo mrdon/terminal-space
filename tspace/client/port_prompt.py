@@ -24,12 +24,12 @@ from tspace.client.stream import yesno_prompt
 
 class Actions:
     async def buy_from_port(
-        self, commodity: str, amount: int
+        self, port_id: int, commodity: str, amount: int
     ) -> Tuple[PlayerClient, PortClient]:
         pass
 
     async def sell_to_port(
-        self, commodity: str, amount: int
+        self, port_id: int, commodity: str, amount: int
     ) -> Tuple[PlayerClient, PortClient]:
         pass
 
@@ -50,7 +50,7 @@ class Prompt(SimpleMenuCmd):
         """
         Trade at this Port
         """
-        await self._print_table(self.player.ship, self.player.ship.sector.port)
+        await self._print_table(self.player.ship, self.player.port)
         raise PromptTransition(PromptType.SECTOR)
 
     async def do_q(self, _):
@@ -83,7 +83,7 @@ class Prompt(SimpleMenuCmd):
                     Color("{green}{}{/green}{red}%{/red}").format(
                         int(c.amount / c.capacity * 100)
                     ),
-                    Color.cyan(ship.holds[c.type]),
+                    Color.cyan(str(ship.holds[c.type])),
                 ]
             )
 
@@ -154,7 +154,7 @@ class Prompt(SimpleMenuCmd):
                             default=True,
                         ):
                             player_client, port_client = await self.actions.sell_to_port(
-                                commodity=c.type, amount=value
+                                port_id=port.id, commodity=c.type, amount=value
                             )
                             self.game.update_player(player_client)
                             self.game.update_port(port_client)
@@ -211,7 +211,7 @@ class Prompt(SimpleMenuCmd):
                             default=True,
                         ):
                             player_client, port_client = await self.actions.buy_from_port(
-                                commodity=c.type, amount=value
+                                port_id=port.id, commodity=c.type, amount=value
                             )
                             self.game.update_player(player_client)
                             self.game.update_port(port_client)

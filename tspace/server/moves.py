@@ -7,18 +7,19 @@ from typing import Callable
 from tspace import json_types
 
 from tspace.server.config import GameConfig
-from tspace.server.planet import CommodityType
-from tspace.server.planet import Galaxy
-from tspace.server.planet import Planet
-from tspace.server.planet import Player
-from tspace.server.planet import Port
-from tspace.server.planet import Sector
-from tspace.server.planet import Ship
-from tspace.server.planet import TradingCommodity
+from tspace.server.models import CommodityType
+
+from tspace.server.models import Planet
+from tspace.server.models import Player
+from tspace.server.models import Port
+from tspace.server.models import Sector
+from tspace.server.models import Ship
+from tspace.server.models import TradingCommodity
 from tspace.server.util import methods_to_json
 
 if typing.TYPE_CHECKING:
     from tspace.server.server import Server
+    from tspace.server.models import Galaxy
 
 
 class GameConfigPublic:
@@ -74,6 +75,7 @@ class TradingCommodityPublic:
 
 class PortPublic:
     def __init__(self, port: Port):
+        self.id = port.id
         self.name = port.name
         self.sector_id = port.sector_id
         self.commodities = [TradingCommodityPublic(c) for c in port.commodities]
@@ -84,14 +86,13 @@ class SectorPublic:
         self.id = sector.id
         self.coords = sector.coords
         self.warps = sector.warps
-        if sector.port:
-            self.port = PortPublic(sector.port)
-            for c in self.port.commodities:
+        self.ports = [PortPublic(port) for port in sector.ports]
+
+        for port in self.ports:
+            for c in port.commodities:
                 c.amount = None
                 c.capacity = None
                 c.price = None
-        else:
-            self.port = None
         self.ships = [TraderShipPublic(ship) for ship in sector.ships]
         self.planets = [PlanetPublic(planet) for planet in sector.planets]
 
@@ -101,8 +102,7 @@ class PlanetPublic:
         self.id = planet.id
         self.name = planet.name
         self.owner = TraderPublic(planet.owner) if planet.owner else None
-        self.planet_type = planet.planet_type.name
-        self.regions = planet.regions
+        self.planet_type = planet.planet_type
 
         self.fuel_ore = 0
         self.organics = 0
@@ -211,24 +211,24 @@ class ShipMoves:
                 )
 
     async def enter_port(self, port_id: int, **kwargs):
-        port: Port = self.galaxy.sectors[port_id].port
+        port: Port = self.galaxy.ports[port_id]
         self.player.port = port
         await self.server.sessions[self.player.id].on_port_enter(
             port=PortPublic(port), player=PlayerPublic(self.player)
         )
 
     async def exit_port(self, port_id: int, **kwargs):
-        port: Port = self.galaxy.sectors[port_id].port
+        port: Port = self.galaxy.ports[port_id]
         self.player.port = None
         await self.server.sessions[self.player.id].on_port_exit(
             port=PortPublic(port), player=PlayerPublic(self.player)
         )
 
     async def sell_to_port(
-        self, parent_id, id: int, commodity: CommodityType, amount: int, **kwargs
+        self, parent_id, port_id: int, commodity: CommodityType, amount: int, **kwargs
     ):
-        ship = self.galaxy.ships[self.player.ship_id]  # type: Ship
-        port = self.galaxy.sectors[ship.sector_id].port  # type: Port
+        ship = self.galaxy.ships[self.player.ship_id]
+        port = self.galaxy.ports[port_id]
 
         try:
             amount = int(amount)
@@ -259,10 +259,15 @@ class ShipMoves:
         await self.events.reply(parent_id, PlayerPublic(self.player), PortPublic(port))
 
     async def buy_from_port(
-        self, parent_id: int, id: int, commodity: CommodityType, amount: int, **kwargs
+        self,
+        parent_id: int,
+        port_id: int,
+        commodity: CommodityType,
+        amount: int,
+        **kwargs,
     ):
-        ship = self.galaxy.ships[self.player.ship_id]  # type: Ship
-        port = self.galaxy.sectors[ship.sector_id].port  # type: Port
+        ship = self.galaxy.ships[self.player.ship_id]
+        port = self.galaxy.ports[port_id]
 
         try:
             amount = int(amount)

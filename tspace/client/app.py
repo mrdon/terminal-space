@@ -69,7 +69,9 @@ class TwApplication(Application):
         self.layout = terminal_scene.layout
 
         async with aiohttp.ClientSession() as aiosession:
-            async with aiosession.ws_connect(f"ws://{host}:{port}/") as ws:
+            async with aiosession.ws_connect(
+                f"ws://{host}:{port}/?name=Remote%20Jim"
+            ) as ws:
 
                 async def read_input():
                     async for msg in ws:
@@ -107,7 +109,9 @@ class TwApplication(Application):
 
         server_to_app = Queue()
 
-        in_cb = await server.join("Bob", lambda text: asyncio.coroutine(server_to_app.put_nowait)(text))
+        in_cb = await server.join(
+            "Jim", lambda text: asyncio.coroutine(server_to_app.put_nowait)(text)
+        )
 
         terminal_scene = TerminalScene(self, in_cb)
         self.layout = terminal_scene.layout
@@ -128,7 +132,9 @@ class TwApplication(Application):
 
         terminal_scene.end()
 
+
 if __name__ == "__main__":
+
     async def run():
         app = TwApplication()
         await app.start()

@@ -64,8 +64,9 @@ class Game:
         else:
             self.sectors[client.id] = Sector(self, client)
 
-        if client.port:
-            self.update_port(client.port)
+        if client.ports:
+            for port in client.ports:
+                self.update_port(port)
 
         if client.ships:
             for ship in client.ships:
@@ -89,12 +90,12 @@ class Game:
         return self.trader_ships[client.id]
 
     def update_port(self, client: PortClient) -> Port:
-        if client.sector_id in self.ports:
-            self.ports[client.sector_id].update(client)
+        if client.id in self.ports:
+            self.ports[client.id].update(client)
         else:
-            self.ports[client.sector_id] = Port(self, client)
+            self.ports[client.id] = Port(self, client)
 
-        return self.ports[client.sector_id]
+        return self.ports[client.id]
 
     def update_trader(self, client: TraderClient) -> Trader:
         if client.id in self.traders:

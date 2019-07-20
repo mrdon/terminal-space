@@ -43,7 +43,10 @@ class TerminalScene:
                         ("grey", f"Sector:  "),
                         ("bold", str(sector.id)),
                         ("grey", f"\nPort:    "),
-                        ("bold", "" if not sector.port else sector.port.class_name),
+                        (
+                            "bold",
+                            "" if not sector.ports else sector.ports[0].class_name,
+                        ),
                         ("grey", f"\nCredits: "),
                         ("bold", str(player.credits)),
                     ]

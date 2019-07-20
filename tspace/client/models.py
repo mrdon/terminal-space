@@ -51,7 +51,6 @@ class Planet:
         self.name: str = ""
         self.owner_id: int = 0
         self.planet_type: str = ""
-        self.regions: List = []
 
         self.fuel_ore: int = 0
         self.organics: int = 0
@@ -63,7 +62,6 @@ class Planet:
         self.name = planet.name
         self.owner_id = planet.owner.id if planet.owner else None
         self.planet_type = planet.planet_type
-        self.regions = planet.regions
 
         self.fuel_ore = planet.fuel_ore
         self.organics = planet.organics
@@ -87,9 +85,9 @@ class TradingCommodityClient:
 class TradingCommodity:
     def __init__(self, client: TradingCommodityClient):
         self.type = CommodityType[client.type]
-        self.price: int = 0
-        self.capacity: int = 0
-        self.amount: int = 0
+        self.price: int = None
+        self.capacity: int = None
+        self.amount: int = None
         self.buying: bool = False
         self.update(client)
 
@@ -110,6 +108,7 @@ class CommodityType(enum.Enum):
 
 @dataclass
 class PortClient:
+    id: int
     sector_id: int
     name: str
     commodities: List[TradingCommodityClient]
@@ -129,6 +128,7 @@ class Port:
 
     def __init__(self, game: Game, client: PortClient):
         self._game = game
+        self.id = client.id
         self.sector_id = client.sector_id
         self.name: str = ""
         self.commodities: Dict[CommodityType, TradingCommodity] = {}
@@ -215,7 +215,7 @@ class SectorClient:
     id: int
     coords: Tuple[int, int]
     warps: List[int]
-    port: PortClient
+    ports: List[PortClient]
     ships: List[TraderShipClient]
     planets: List[PlanetClient]
 
@@ -224,7 +224,7 @@ class Sector:
     def __init__(self, game: Game, client: SectorClient):
         self.id = client.id
         self._game = game
-        self.port_id: int = 0
+        self.port_ids: List[int] = []
         self.warps: List[int] = []
         self.coords: Tuple[int, int] = (0, 0)
         self.trader_ship_ids: List[int] = []
@@ -232,17 +232,16 @@ class Sector:
         self.update(client)
 
     def update(self, client: SectorClient):
-        self.port_id = None if not client.port else client.port.sector_id
-
         self.warps = client.warps
         self.coords = client.coords
 
+        self.port_ids = [port.id for port in client.ports]
         self.trader_ship_ids = [ship.id for ship in client.ships]
         self.planet_ids = [p.id for p in client.planets]
 
     @property
-    def port(self) -> Optional[Port]:
-        return None if not self.port_id else self._game.ports.get(self.port_id)
+    def ports(self) -> List[Port]:
+        return [self._game.ports[port_id] for port_id in self.port_ids]
 
     @property
     def ships(self) -> List[TraderShip]:

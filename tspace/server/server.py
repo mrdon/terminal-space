@@ -6,7 +6,7 @@ from tspace.server.config import GameConfig
 from tspace.server.moves import GameConfigPublic
 from tspace.server.moves import PlayerPublic
 from tspace.server.moves import ShipMoves, ServerEvents
-from tspace.server.planet import Galaxy
+from tspace.server.galaxy import Galaxy
 from tspace.server.util import CallMethodOnEventType
 
 

@@ -74,7 +74,7 @@ class Session:
     async def on_port_enter(self, port: PortClient, player: PlayerClient):
         p = self.game.update_port(port)
         self.game.update_player(player)
-        self.game.player.port_id = p.sector_id
+        self.game.player.port_id = p.id
 
         self.prompt = self.start_port_prompt()
         self.prompt_task.cancel()

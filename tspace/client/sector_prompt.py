@@ -36,7 +36,7 @@ class Prompt:
         self.instant_cmd = InstantCmd(term)
         self.instant_cmd.literal("d", default=True)(self.do_d)
         self.instant_cmd.literal(
-            "p", validator=lambda _: self.player.sector.port_id is not None
+            "p", validator=lambda _: len(self.player.sector.ports) > 0
         )(self.do_p)
         self.instant_cmd.literal("q")(self.do_q)
         self.instant_cmd.regex(
@@ -62,11 +62,10 @@ class Prompt:
         self.print_sector()
 
     async def do_p(self, line):
-        if self.player.sector.port_id:
-            self.out.nl(2)
-            self.out.print("Docking...", color="red", attrs=["blink"])
-            await self.actions.enter_port(port_id=self.player.sector.port.sector_id)
-            raise PromptTransition(PromptType.NONE)
+        self.out.nl(2)
+        self.out.print("Docking...", color="red", attrs=["blink"])
+        await self.actions.enter_port(port_id=self.player.sector.ports[0].id)
+        raise PromptTransition(PromptType.NONE)
 
     def do_q(self, line):
         raise PromptTransition(PromptType.QUIT)
@@ -176,22 +175,22 @@ class Prompt:
                 )
             data.rows.append(Row(header=Fragment("magenta", "Planets"), items=items))
 
-        if sector.port:
-            p = sector.port
-
-            items = Item(
-                [
-                    Fragment("cyan", p.name),
-                    Fragment("yellow", ", "),
-                    Fragment("magenta", "Class "),
-                    Fragment("cyan", str(p.class_number)),
-                    Fragment("magenta", " ("),
-                ]
-            )
-            items.value += p.class_name_colored
-            items.value.append(Fragment("magenta", ")"))
-
-            data.rows.append(Row(header=Fragment("green", "Port"), items=[items]))
+        if sector.ports:
+            items = []
+            for port in sector.ports:
+                item = Item(
+                    [
+                        Fragment("cyan", port.name),
+                        Fragment("yellow", ", "),
+                        Fragment("magenta", "Class "),
+                        Fragment("cyan", str(port.class_number)),
+                        Fragment("magenta", " ("),
+                    ]
+                )
+                item.value += port.class_name_colored
+                item.value.append(Fragment("magenta", ")"))
+                items.append(item)
+            data.rows.append(Row(header=Fragment("green", "Port"), items=items))
         #
         # other_ships = [s for s in sector.ships if s.trader.id != self.player.ship.id]
         # if other_ships:

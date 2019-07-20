@@ -1,0 +1,42 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from tspace.server.util import AutoIncrementId
+
+from tspace.server.models import ShipType, Ship
+
+if TYPE_CHECKING:
+    from tspace.server.models import Galaxy
+
+autoid = AutoIncrementId()
+
+
+MERCHANT_CRUISER = ShipType(
+    name="Merchant Cruiser",
+    cost=41300,
+    holds_initial=200,
+    holds_max=75,
+    warp_cost=2,
+    has_scanner_slot=True,
+    has_shield_slot=True,
+    weapons_max=2,
+    countermeasures_max=3,
+)
+
+
+def create() -> Ship:
+    breakpoint()
+
+
+def create_initial(game: Galaxy, name: str, player_id: int, sector_id: int):
+    ship = Ship(
+        game,
+        autoid.incr(),
+        MERCHANT_CRUISER,
+        name,
+        player_id=player_id,
+        sector_id=sector_id,
+    )
+    game.ships[ship.id] = ship
+    return ship
