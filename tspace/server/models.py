@@ -6,7 +6,7 @@ from typing import List, Dict, Iterable, Tuple
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .galaxy import Galaxy
+    from tspace.server.galaxy import Galaxy
 
 
 class Planet:

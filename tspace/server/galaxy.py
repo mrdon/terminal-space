@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Dict
 
 import networkx
 
-from tspace.server import ships, ports, planets, players, sectors
 from tspace.server.graph import gen_hex_center, remove_warps
 from tspace.server.models import Sector, Player, Ship, Planet, Port
+from tspace.server.builders import planets, players, ports, sectors, ships
 
 if TYPE_CHECKING:
     from tspace.server.config import GameConfig

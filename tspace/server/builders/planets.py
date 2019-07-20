@@ -1,6 +1,6 @@
 from __future__ import annotations
 from tspace.server.constants import PORT_NAMES, PLANET_SUFFIXES
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from tspace.server.util import AutoIncrementId
 from tspace.server.models import Planet
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 autoid = AutoIncrementId()
 
 
-def create(game: Galaxy, owner_id: int) -> Planet:
+def create(game: Galaxy, owner_id: Optional[int]) -> Planet:
     base_name = game.rnd.choice(PORT_NAMES)
     suffix = game.rnd.choice(PLANET_SUFFIXES)
     name = f"{base_name} {suffix}".strip()
