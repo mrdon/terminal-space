@@ -219,7 +219,7 @@ class Countermeasure:
 class Ship:
     def __init__(
         self,
-        game,
+        game: Galaxy,
         id: int,
         ship_type: ShipType,
         name: str,
@@ -236,8 +236,8 @@ class Ship:
         self.ship_type = ship_type
         self.sector_id = sector_id
         self.game = game
-        self.weapons: Iterable[Weapon] = []
-        self.countermeasures: Iterable[Countermeasure] = []
+        self.weapon_ids: List[int] = []
+        self.countermeasure_ids: List[int] = []
 
     def move_sector(self, sector_id):
         self.sector_id = sector_id
@@ -257,5 +257,25 @@ class Ship:
     def sector(self):
         return self.game.sectors[self.sector_id]
 
+    @property
+    def weapons(self) -> List[Weapon]:
+        return [self.game.weapons[id] for id in self.weapon_ids]
+
+    @property
+    def countermeasures(self) -> List[Countermeasure]:
+        return [self.game.countermeasures[id] for id in self.countermeasure_ids]
+
     def remove_from_holds(self, commodity_type: CommodityType, amount: int):
         self.holds[commodity_type] -= amount
+
+    def add_weapon(self, weapon: Weapon):
+        if len(self.weapon_ids) < self.ship_type.weapons_max:
+            self.weapon_ids.append(weapon.id)
+        else:
+            raise ValueError("Cannot add any more weapons")
+
+    def add_countermeasure(self, countermeasure: Countermeasure):
+        if len(self.countermeasure_ids) < self.ship_type.countermeasures_max:
+            self.countermeasure_ids.append(countermeasure.id)
+        else:
+            raise ValueError("Cannot add any more countermeasures")

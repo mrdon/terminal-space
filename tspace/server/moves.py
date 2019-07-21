@@ -7,7 +7,7 @@ from typing import Callable
 from tspace import json_types
 
 from tspace.server.config import GameConfig
-from tspace.server.models import CommodityType
+from tspace.server.models import CommodityType, Weapon, Countermeasure
 
 from tspace.server.models import Planet
 from tspace.server.models import Player
@@ -58,10 +58,33 @@ class ShipPublic:
     def __init__(self, ship: Ship, sector: Sector):
         self.id = ship.id
         self.name = ship.name
-        self.type = ship.ship_type
+        # self.type = ship.ship_type
         self.holds_capacity = ship.holds_capacity
         self.holds = {t.name: val for t, val in ship.holds.items()}
         self.sector = SectorPublic(sector)
+        self.weapons = [WeaponPublic(w) for w in ship.weapons]
+        self.countermeasures = [CountermeasurePublic(w) for w in ship.countermeasures]
+        self.type = ship.ship_type.name
+
+
+class WeaponPublic:
+    def __init__(self, weapon: Weapon):
+        self.id = weapon.id
+        self.name = weapon.name
+        self.damage_type = weapon.damage_type.name
+        self.damage_min = weapon.damage_min
+        self.damage_max = weapon.damage_max
+        self.accuracy_bonus = weapon.accuracy_bonus
+
+
+class CountermeasurePublic:
+    def __init__(self, countermeasure: Countermeasure):
+        self.id = countermeasure.id
+        self.name = countermeasure.name
+        self.strengths = [s.name for s in countermeasure.strengths]
+        self.strength_bonus = countermeasure.strength_bonus
+        self.weaknesses = [s.name for s in countermeasure.weaknesses]
+        self.weakness_penalty = countermeasure.weakness_penalty
 
 
 class TradingCommodityPublic:

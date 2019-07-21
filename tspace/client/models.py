@@ -31,6 +31,60 @@ class GameConfig:
         self.sectors_count = client.sectors_count
 
 
+class DamageType(enum.Enum):
+    ENERGY = "Energy"
+    KINETIC = "Kinetic"
+    EXPLOSIVE = "Explosive"
+
+
+@dataclass
+class WeaponClient:
+    id: int
+    name: str
+    accuracy_bonus: int
+    damage_min: int
+    damage_max: int
+    damage_type: str
+
+
+class Weapon:
+    def __init__(self, game: Game, weapon: WeaponClient):
+        self._game = game
+        self.id: int = weapon.id
+        self.update(weapon)
+
+    def update(self, weapon: WeaponClient):
+        self.name = weapon.name
+        self.accuracy_bonus = weapon.accuracy_bonus
+        self.damage_min: int = weapon.damage_min
+        self.damage_max = weapon.damage_max
+        self.damage_type = getattr(DamageType, weapon.damage_type.upper())
+
+
+@dataclass
+class CountermeasureClient:
+    id: int
+    name: str
+    strengths: List[str]
+    strength_bonus: int
+    weaknesses: List[str]
+    weakness_penalty: int
+
+
+class Countermeasure:
+    def __init__(self, game: Game, countermeasure: CountermeasureClient):
+        self._game = game
+        self.id: int = countermeasure.id
+        self.update(countermeasure)
+
+    def update(self, countermeasure: CountermeasureClient):
+        self.name = countermeasure.name
+        self.strengths = [getattr(DamageType, dt) for dt in countermeasure.strengths]
+        self.strength_bonus = countermeasure.strength_bonus
+        self.weaknesses = [getattr(DamageType, dt) for dt in countermeasure.weaknesses]
+        self.weakness_penalty = countermeasure.weakness_penalty
+
+
 @dataclass
 class PlanetClient:
     id: int
@@ -213,7 +267,6 @@ class TraderShip:
 @dataclass
 class SectorClient:
     id: int
-    coords: Tuple[int, int]
     warps: List[int]
     ports: List[PortClient]
     ships: List[TraderShipClient]
@@ -224,16 +277,10 @@ class Sector:
     def __init__(self, game: Game, client: SectorClient):
         self.id = client.id
         self._game = game
-        self.port_ids: List[int] = []
-        self.warps: List[int] = []
-        self.coords: Tuple[int, int] = (0, 0)
-        self.trader_ship_ids: List[int] = []
-        self.planet_ids: List[int] = []
         self.update(client)
 
     def update(self, client: SectorClient):
         self.warps = client.warps
-        self.coords = client.coords
 
         self.port_ids = [port.id for port in client.ports]
         self.trader_ship_ids = [ship.id for ship in client.ships]
@@ -258,8 +305,11 @@ class Sector:
 class ShipClient:
     id: int
     name: str
+    type: str
     holds_capacity: int
     holds: Dict[str, int]
+    weapons: List[WeaponClient]
+    countermeasures: List[CountermeasureClient]
     sector: SectorClient
 
 
@@ -276,10 +326,15 @@ class Ship:
 
     def update(self, client: ShipClient):
         self.name = client.name
+        self.type = client.type
         self.holds_capacity = client.holds_capacity
 
         self.holds.update({CommodityType[k]: v for k, v in client.holds.items()})
         self.sector_id = client.sector.id if client.sector else None
+        self.weapons = [Weapon(self._game, weapon) for weapon in client.weapons]
+        self.countermeasures = [
+            Countermeasure(self._game, cm) for cm in client.countermeasures
+        ]
 
     @property
     def sector(self) -> Optional[Sector]:

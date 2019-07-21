@@ -4,7 +4,7 @@ from typing import List
 
 import networkx as nx
 
-from tspace.client.models import GameConfig
+from tspace.client.models import GameConfig, WeaponClient
 from tspace.client.models import Planet
 from tspace.client.models import PlanetClient
 from tspace.client.models import Player
@@ -75,6 +75,11 @@ class Game:
         if client.planets:
             for planet in client.planets:
                 self.update_planet(planet)
+
+        for warp_id in (x for x in client.warps if not self.sectors[x]):
+            self.sectors[warp_id] = Sector(
+                self, SectorClient(id=warp_id, warps=[], ports=[], ships=[], planets=[])
+            )
 
         return self.sectors[client.id]
 

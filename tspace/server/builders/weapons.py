@@ -1,4 +1,15 @@
+from __future__ import annotations
+
+import dataclasses
+from typing import TYPE_CHECKING
+
 from tspace.server.models import Weapon, DamageType
+from tspace.server.util import AutoIncrementId
+
+if TYPE_CHECKING:
+    from tspace.server.models import Galaxy
+
+autoid = AutoIncrementId()
 
 MINING_LASER = Weapon(
     id=-1,
@@ -26,5 +37,16 @@ RAILGUN = Weapon(
 )
 
 
-def create() -> Weapon:
-    breakpoint()
+def create(game: Galaxy, type: DamageType) -> Weapon:
+    if type == DamageType.ENERGY:
+        weapon_template = MINING_LASER
+    elif type == DamageType.KINETIC:
+        weapon_template = RAILGUN
+    elif type == DamageType.EXPLOSIVE:
+        weapon_template = CONCUSSION_MISSILE
+    else:
+        breakpoint()
+        raise ValueError()
+    weapon = dataclasses.replace(weapon_template, id=autoid.incr())
+    game.weapons[weapon.id] = weapon
+    return weapon

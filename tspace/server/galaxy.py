@@ -6,7 +6,15 @@ from typing import TYPE_CHECKING, Dict
 import networkx
 
 from tspace.server.graph import gen_hex_center, remove_warps
-from tspace.server.models import Sector, Player, Ship, Planet, Port
+from tspace.server.models import (
+    Sector,
+    Player,
+    Ship,
+    Planet,
+    Port,
+    Weapon,
+    Countermeasure,
+)
 from tspace.server.builders import planets, players, ports, sectors, ships
 
 if TYPE_CHECKING:
@@ -25,6 +33,8 @@ class Galaxy:
         self.players: Dict[int, Player] = {}
         self.ships: Dict[int:Ship] = {}
         self.planets: Dict[int, Planet] = {}
+        self.weapons: Dict[int, Weapon] = {}
+        self.countermeasures: Dict[int, Countermeasure] = {}
         self._graph = None
 
         self.rnd = random.Random(self.config.seed)
