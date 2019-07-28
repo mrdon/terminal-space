@@ -2,7 +2,7 @@
 
 Terminal Space is a text-based space trading and exploration game that was inspired by [TradeWars 2002](http://tradewars.com) and several other space trading, elite-type games such as [Space Trader](https://en.wikipedia.org/wiki/Space_Trader_(Palm_OS)) and [Space Rangers](https://en.wikipedia.org/wiki/Space_Rangers_(video_game)).
 
-![game version 0.1.0](assets/game-0.1.png)
+![game version 0.1.1](assets/game-0.1.1.png)
 
 ## Features
 
@@ -10,7 +10,7 @@ Terminal Space is a text-based space trading and exploration game that was inspi
 2. Single and multi-player modes (with standalone server)
 3. TradeWars 2002 concepts like sectors, planets, ports, and ships
 
-It currently implements the TradeWars basics of a universe, sectors, and ports, but will soon be taken in new directions.
+It currently implements the TradeWars basics of a universe, sectors, and ports, but will next be taken in new directions.
 
 ### Roadmap
 
@@ -50,4 +50,4 @@ You can see all the possible commands by running:
 
     make 
     
-Development is often streamed on my [Twitch stream](https://www.twitch.tv/mrdonbrown/) and I'm on twitter as @mrdonbrown.
+Development is occasionally streamed on my [Twitch stream](https://www.twitch.tv/mrdonbrown/) and I'm on twitter as @mrdonbrown.
