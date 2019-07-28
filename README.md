@@ -2,7 +2,7 @@
 
 Terminal Space is a text-based space trading and exploration game that was inspired by [TradeWars 2002](http://tradewars.com) and several other space trading, elite-type games such as [Space Trader](https://en.wikipedia.org/wiki/Space_Trader_(Palm_OS)) and [Space Rangers](https://en.wikipedia.org/wiki/Space_Rangers_(video_game)).
 
-![game version 0.1.1](assets/game-0.1.1.png)
+![game version 0.1.1](assets/game-0.1.1.gif)
 
 ## Features
 
