@@ -3,7 +3,6 @@ import json
 import types
 import typing
 from asyncio import Future
-from asyncio import coroutine
 from dataclasses import dataclass
 from functools import wraps
 from typing import Any
@@ -144,6 +143,18 @@ class EventBus:
 
                 if func:
                     kwargs = json_types.decode(event, func, context=self.context)
-                    return await coroutine(func)(**kwargs)
+                    return await sync_to_async(func)(**kwargs)
 
             raise ValueError(f"No listeners found for {event_type} in {self.targets}")
+
+
+def sync_to_async(func: Callable):
+
+    if inspect.iscoroutinefunction(func):
+        return func
+    
+    @wraps(func)
+    async def inner(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return inner

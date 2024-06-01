@@ -6,6 +6,7 @@ from prompt_toolkit.layout import Layout
 from prompt_toolkit.widgets import Button
 from prompt_toolkit.widgets import Label
 
+from tspace.client.logging import log
 from tspace.client.ui.menu import MenuDialog
 from tspace.client.ui.starfield import Starfield
 
@@ -38,6 +39,7 @@ class TitleScene:
         self.future.set_result(result)
 
     async def start(self):
+        log.info("Starting title")
         result = await self.future
         self.future = Future()
         return result

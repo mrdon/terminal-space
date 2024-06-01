@@ -4,16 +4,18 @@ import math
 # from PIL import Image
 # from PIL.ImageDraw import Draw
 import networkx as nx
+from networkx import Graph
 from networkx.algorithms import shortest_path_length
 
 
-def gen_hex_center(size):
+def gen_hex_center(size) -> nx.Graph:
     g = nx.Graph(directed=False)
     g.add_node((0, 0))
 
     radius = math.ceil(size / 2)
     for rad in range(radius):
-        for q, r in g.nodes():
+        d = {q: r for q, r in g.nodes()}
+        for q, r in d.items():
             g.add_edge((q, r), (q, r - 1))
             g.add_edge((q, r), (q - 1, r))
             g.add_edge((q, r), (q - 1, r + 1))
@@ -53,13 +55,13 @@ def gen_hex_center(size):
 #     return g.to_directed()
 
 
-def remove_warps(g, density, rnd: random.Random):
+def remove_warps(g: Graph, density, rnd: random.Random):
     target_edge_count = int(g.number_of_nodes() * density)
-    edges = nx.edges(g)
+    edges = [e for e in nx.edges(g)]
     removed_edges = []
     while len(edges) > target_edge_count:
         e = rnd.choice(edges)
-        if len(g.neighbors(e[0])) > 1 and len(g.neighbors(e[1])) > 1:
+        if len(list(g.neighbors(e[0]))) > 1 and len(list(g.neighbors(e[1]))) > 1:
             # print("Removing edge: {}".format(e))
             g.remove_edge(*e)
             edges.remove(e)
@@ -71,7 +73,7 @@ def remove_warps(g, density, rnd: random.Random):
 
     while True:
         connected = True
-        for n in g.nodes_iter():
+        for n in g.nodes():
             try:
                 shortest_path_length(g, source=(0, 0), target=n)
             except nx.exception.NetworkXNoPath:
@@ -93,10 +95,10 @@ def remove_warps(g, density, rnd: random.Random):
             break
 
     warps = [0] * 7
-    for n in g.nodes_iter():
+    for n in g.nodes():
         try:
             shortest_path_length(g, source=(0, 0), target=n)
-            warps[len(nx.neighbors(g, n))] += 1
+            warps[len(list(nx.neighbors(g, n)))] += 1
         except nx.exception.NetworkXNoPath:
             raise Exception("bad")
 

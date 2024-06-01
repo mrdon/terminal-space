@@ -66,7 +66,7 @@ class Galaxy:
         self.sector_coords_to_id = networkx.get_node_attributes(g, "sector_id")
         self.sector_coords_to_id[(0, 0)] = 1
 
-        for n in g.nodes_iter():
+        for n in g.nodes():
             warps = [self.coords_to_id(*target) for target in g.neighbors(n)]
             sector_id = self.coords_to_id(*n)
             sector = sectors.create(self, sector_id, n, warps)

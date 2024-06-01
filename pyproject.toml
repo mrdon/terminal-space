@@ -1,0 +1,35 @@
+[project]
+name = "terminal-space"
+version = "0.1.2-dev"
+description = "Default template for PDM package"
+authors = [
+    {name = "Don Brown", email = "mrdon@twdata.org"},
+]
+dependencies = [
+    "aiohttp>=3.5.4",
+    "colorclass>=2.0.0",
+    "networkx>=1.9.1",
+    "tabulate>=0.7.5",
+    "prompt-toolkit>=2.0.9",
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "APLv2"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "nose>=1.3.7",
+    "black>=24.4.2",
+    "pyinstaller>=4.5.1",
+    "twine>=5.1.0",
+    "bumpversion>=0.6.0",
+    "wheel>=0.43.0",
+]

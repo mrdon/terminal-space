@@ -10,6 +10,7 @@ from typing import Optional
 from tspace.client import models, sector_prompt, port_prompt
 from tspace.client.game import Game
 from tspace.client.instant_cmd import InstantCmd
+from tspace.client.logging import log
 from tspace.client.models import GameConfig
 from tspace.client.models import GameConfigClient
 from tspace.client.models import PlayerClient
@@ -62,7 +63,7 @@ class Session:
                         self.prompt = self.start_no_prompt()
 
     async def on_game_enter(self, player: PlayerClient, config: GameConfigClient):
-        # print("on game enter!!!!!!!!!!!!!")
+        log.info("on game enter!!!!!!!!!!!!!")
         self.game = Game(GameConfig(config))
         self.game.update_player(player)
 

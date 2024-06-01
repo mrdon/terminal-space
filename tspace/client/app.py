@@ -4,10 +4,11 @@ from asyncio import Queue
 
 import aiohttp
 from prompt_toolkit import Application
-from prompt_toolkit.eventloop import use_asyncio_event_loop
-from prompt_toolkit.layout.screen import Size
+from prompt_toolkit.data_structures import Size
 from prompt_toolkit.styles import Style
 
+from tspace.client.logging import log
+from tspace.client.util import sync_to_async
 from tspace.server.config import GameConfig
 from tspace.server.server import Server
 from tspace.client.scene.game import TerminalScene
@@ -40,19 +41,19 @@ class TwApplication(Application):
             raise InvalidScreenSize(expected, actual)
 
     async def start(self):
-        use_asyncio_event_loop()
-        ui_task = self.run_async().to_asyncio_future()
+        ui_task = asyncio.create_task(self.run_async())
 
         while True:
             self.layout = self.title_scene.layout
             self.invalidate()
             action = await self.title_scene.start()
+            log.info(f"got {action} from title")
             if action == "start":
                 await self.start_game()
             elif action == "join":
                 await self.join("localhost", "8080")
             elif action == "quit":
-                self.exit(False)
+                self.exit()
                 await ui_task
                 break
             else:
@@ -110,7 +111,7 @@ class TwApplication(Application):
         server_to_app = Queue()
 
         in_cb = await server.join(
-            "Jim", lambda text: asyncio.coroutine(server_to_app.put_nowait)(text)
+            "Jim", lambda text: sync_to_async(server_to_app.put_nowait)(text)
         )
 
         terminal_scene = TerminalScene(self, in_cb)
