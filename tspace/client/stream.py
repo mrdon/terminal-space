@@ -1,13 +1,17 @@
+import time
 from asyncio import Queue
 from dataclasses import astuple
 from dataclasses import dataclass
-from typing import Iterable
+from enum import Enum, auto
+from typing import Iterable, Generator
 from typing import Tuple, Callable, List, Sequence
 
 from prompt_toolkit import ANSI
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import to_formatted_text
 
 from tspace.client.instant_cmd import InstantCmd, InvalidSelectionError
+from tspace.client.logging import log
 from tspace.client.twbuffer import TwBuffer
 
 
@@ -76,6 +80,26 @@ class Terminal:
         for line in text.split("\n"):
             self.write_line(*to_formatted_text(ANSI(line)))
             self.nl()
+
+    def write_ansi_raw(self, text):
+        formatted_text = to_formatted_text(ANSI(text))
+        pos = self.buffer.cursor_position
+        self.buffer.insert_after(formatted_text)
+        self.buffer.cursor_position = pos
+        #
+        # log.info(f"line: {text}")
+        # ansi_cursor = ANSICursor(text)
+        # ops = ansi_cursor.parsed
+        # for op in ops:
+        #     if isinstance(op, str):
+        #         # log.info(f"str: {op}")
+        #         formatted_text = to_formatted_text(ANSI(op))
+        #         self.buffer.insert_after(formatted_text)
+        #     else:
+        #         # if op.op == CursorOpType.MOVE:
+                #     # log.info(f"mov: x:{op.x_mod} y:{op.y_mod}")
+                #     self.buffer.cursor_position = Point(self.buffer.cursor_position.x + op.x_mod,
+                #                                self.buffer.cursor_position.y + op.y_mod)
 
 
 @dataclass
@@ -246,3 +270,105 @@ async def yesno_prompt(
     if not val.strip():
         val = default
     return val is True or "y" == val.lower()
+
+
+class CursorOpType(Enum):
+    MOVE = auto()
+
+
+class CursorOperation:
+    def __init__(self, op: CursorOpType, x_mod: int, y_mod: int):
+        self.op = op
+        self.x_mod = x_mod
+        self.y_mod = y_mod
+
+
+class ANSICursor:
+    def __init__(self, value: str) -> None:
+        self.value = value
+        self.parsed: list[CursorOperation | str] = []
+
+        # Process received text.
+        parser = self._parse_corot()
+        parser.send(None)  # type: ignore
+        for c in value:
+            parser.send(c)
+
+    def _parse_corot(self) -> Generator[None, str, None]:
+        """
+        Coroutine that parses the ANSI escape sequences.
+        """
+
+        while True:
+            # NOTE: CSI is a special token within a stream of characters that
+            #       introduces an ANSI control sequence used to set the
+            #       style attributes of the following characters.
+            csi = False
+
+            c = yield
+
+            # Check for CSI
+            if c == "\x1b":
+                # Start of color escape sequence.
+                square_bracket = yield
+                if square_bracket == "[":
+                    csi = True
+                else:
+                    continue
+            elif c == "\x9b":
+                csi = True
+
+            if csi:
+                # Got a CSI sequence. Color codes are following.
+                current = ""
+                csi_buffer: list[str] = ["\x1b["]
+                params = []
+
+                while True:
+                    char = yield
+                    csi_buffer.append(char)
+                    # Construct number
+                    if char.isdigit():
+                        current += char
+
+                    # Eval number
+                    else:
+                        # Limit and save number value
+                        params.append(min(int(current or 0), 9999))
+
+                        # Get delimiter token if present
+                        if char == ";":
+                            current = ""
+
+                        # move pos up
+                        elif char == "A":
+                            self.parsed.append(CursorOperation(CursorOpType.MOVE, y_mod=params[0] * -1, x_mod=0))
+                            break
+                        # move pos down
+                        elif char == "B":
+                            self.parsed.append(CursorOperation(CursorOpType.MOVE, y_mod=params[0], x_mod=0))
+                            break
+                        # move pos right
+                        elif char == "C":
+                            self.parsed.append(CursorOperation(CursorOpType.MOVE, y_mod=0, x_mod=params[0]))
+                            break
+                        # move pos left
+                        elif char == "D":
+                            self.parsed.append(CursorOperation(CursorOpType.MOVE, y_mod=0, x_mod=params[0]))
+                            break
+                        else:
+                            invalid_code = "".join(csi_buffer)
+                            # log.debug(f"Unexpected ansi code: {invalid_code}")
+                            self.parsed.append(invalid_code)
+                            csi_buffer.clear()
+                            break
+            else:
+                # Add current character.
+                # NOTE: At this point, we could merge the current character
+                #       into the previous tuple if the style did not change,
+                #       however, it's not worth the effort given that it will
+                #       be "Exploded" once again when it's rendered to the
+                #       output.
+                self.parsed.append(c)
+
+

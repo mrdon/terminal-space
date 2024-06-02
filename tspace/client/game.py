@@ -19,6 +19,7 @@ from tspace.client.models import Trader
 from tspace.client.models import TraderClient
 from tspace.client.models import TraderShip
 from tspace.client.models import TraderShipClient
+from tspace.client.theme.tw2002 import Tw2002Theme
 
 
 class Game:

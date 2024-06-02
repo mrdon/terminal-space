@@ -11,25 +11,25 @@ clean:
 
 format: ## Format the imports and code
 	echo Formatting code
-	venv/bin/black -l 88 -t py37 tspace
+	pdm run black -l 88 -t py37 tspace
 
-virtualenv: ## Create a virtualenv
-	python3.7 -m venv venv
-	venv/bin/pip install -r requirements.dev.txt
+pyenv: ## Create a virtualenv
+	pdm init
 
 run: ## Run the app
-	venv/bin/python tspace/client_app.py
+	pdm run python -m tspace.client_app
 
 run-server: ## Run the standalone server, needed for joining a game
-	venv/bin/python tspace/server_app.py
+	pdm run tspace/server_app.py
 
 run-docker: ## Run the app in a docker container
 	docker build -t tspace .
 	echo "Run the app with:\n\ndocker run -it tspace"
 
 bin: ## Build a single file distribution
-	venv/bin/pyinstaller --onefile tspace-server.spec
-	venv/bin/pyinstaller --onefile tspace-client.spec
+	pdm export -o requirements.txt --without-hashes --prod
+	#pdm run pyinstaller tspace-server.spec
+	pdm run pyinstaller tspace-client.spec
 	echo "Run the app with:\n\ndist/tspace-client"
 
 release: clean  ## Release the game to pypi

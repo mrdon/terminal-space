@@ -1,4 +1,8 @@
+import asyncio
 from typing import List
+
+from prompt_toolkit.data_structures import Point
+from terminaltexteffects.effects.effect_beams import Beams
 
 from tspace.client.game import Game
 from tspace.client.instant_cmd import InstantCmd
@@ -58,6 +62,7 @@ class Prompt:
         """
         Re-display the current sector
         """
+
         print_action(self.out, "Redisplay")
         self.print_sector()
 
@@ -95,6 +100,14 @@ class Prompt:
             ("magenta", ")? : "),
         )
 
+    async def beams_animated_prompt(self, prompt_text: str) -> str:
+        effect = Beams(prompt_text)
+        effect.effect_config.final_gradient_frames = 1
+        effect.effect_config.merge = True  #
+        for frame in effect:
+            self.out.write_ansi_raw(frame)
+            await asyncio.sleep(.00004)
+
     async def do_move(self, target_sector):
         """
         Move to an adjacent sector
@@ -107,10 +120,13 @@ class Prompt:
 
         print_action(self.out, "Move")
         if target_id in self.player.sector.warps:
-            self.out.write_line(
-                ("magenta", "Warping to Sector "), ("yellow", str(target_id))
-            )
+
+            await self.beams_animated_prompt(f"<< Warping to Sector {target_id} >>")
             self.out.nl(2)
+            # self.out.write_line(
+            #     ("magenta", "Warping to Sector "), ("yellow", str(target_id))
+            # )
+            # self.out.nl(2)
 
             sector_client = await self.actions.move_trader(sector_id=target_id)
             s = self.game.update_sector(sector_client)

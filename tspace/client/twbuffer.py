@@ -1,7 +1,13 @@
-from typing import Callable
+from enum import Enum, auto
+from sqlite3 import Cursor
+from typing import Callable, Generator
 from typing import Tuple, List, Sequence
 
 from prompt_toolkit.layout.screen import Point
+
+from tspace.client.logging import log
+
+
 
 
 class TwBuffer:
@@ -12,7 +18,8 @@ class TwBuffer:
         self.input_listeners: List[Callable[[str], None]] = []
         self.change_listeners: List[Callable[[], None]] = []
 
-    def insert_after(self, *text: Sequence[Tuple[str, str]]):
+
+    def insert_after(self, *text: Sequence[Tuple[str, str]], cursor_pos: Point | None = None):
         if not isinstance(text, (Tuple, List)):
             raise ValueError()
 
@@ -34,12 +41,19 @@ class TwBuffer:
         text = str_buffer
 
         if text and text[0]:
-            self.buffer[self.cursor.y] += text[0]
+            # old_line = self.buffer[self.cursor.y]
+            if self.cursor.x == 0:
+                self.buffer[self.cursor.y] = text[0]
+            else:
+                self.buffer[self.cursor.y] += text[0]
 
         if len(text) > 1:
             self.buffer += text[1:]
 
-        self._set_cursor_to_buffer_end()
+        if cursor_pos:
+            self.cursor = cursor_pos
+        else:
+            self._set_cursor_to_buffer_end()
 
         for listener in self.change_listeners:
             listener()
@@ -67,6 +81,12 @@ class TwBuffer:
     def cursor_position(self) -> Point:
         return self.cursor
 
+    @cursor_position.setter
+    def cursor_position(self, value: Point):
+        self.cursor = value
+        for listener in self.change_listeners:
+            listener()
+
     def on_key_press(self, txt: str):
         for listener in self.input_listeners:
             listener(txt)
@@ -88,3 +108,5 @@ class TwBuffer:
                 line[-1] = (last[0], chars)
 
         self._set_cursor_to_buffer_end()
+
+

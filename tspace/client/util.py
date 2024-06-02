@@ -152,7 +152,7 @@ def sync_to_async(func: Callable):
 
     if inspect.iscoroutinefunction(func):
         return func
-    
+
     @wraps(func)
     async def inner(*args, **kwargs):
         return func(*args, **kwargs)
