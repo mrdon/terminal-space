@@ -3,6 +3,7 @@ from typing import List
 
 from prompt_toolkit.data_structures import Point
 from terminaltexteffects.effects.effect_beams import Beams
+from terminaltexteffects.effects.effect_slide import Slide
 
 from tspace.client.game import Game
 from tspace.client.instant_cmd import InstantCmd
@@ -102,6 +103,14 @@ class Prompt:
 
     async def beams_animated_prompt(self, prompt_text: str) -> str:
         effect = Beams(prompt_text)
+        effect.effect_config.final_gradient_frames = 1
+        effect.effect_config.merge = True  #
+        for frame in effect:
+            self.out.write_ansi_raw(frame)
+            await asyncio.sleep(.00004)
+
+    async def slide_animated_prompt(self, prompt_text: str) -> str:
+        effect = Slide(prompt_text)
         effect.effect_config.final_gradient_frames = 1
         effect.effect_config.merge = True  #
         for frame in effect:
@@ -247,7 +256,7 @@ class Prompt:
     def print_ship_enter_sector(self, ship):
         self.out.nl()
         self.out.write_line(
-            ("cyan bold", ship.trader.name), ("green", " warps into th esector.")
+            ("cyan bold", ship.trader.name), ("green", " warps into the sector.")
         )
         self.out.nl()
 

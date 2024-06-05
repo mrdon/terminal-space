@@ -27,13 +27,11 @@ class Starfield(UIControl):
             style="bg:black",
         )
         self.init_stars()
+        self.speed = 0.03
+        self.paused = False
 
-        async def tick():
-            while True:
-                get_app().invalidate()
-                await asyncio.sleep(0.05)
-
-        asyncio.create_task(tick())
+    def reset_speed(self):
+        self.speed = 0.03
 
     def init_stars(self):
         """ Create the starfield """
@@ -55,7 +53,7 @@ class Starfield(UIControl):
 
         for star in self.stars:
             # The Z component is decreased on each frame.
-            star[2] -= 0.1
+            star[2] -= self.speed
 
             # If the star has past the screen (I mean Z<=0) then we
             # reposition it far away from the screen (Z=max_depth)

@@ -5,7 +5,10 @@ from asyncio import Queue
 import aiohttp
 from prompt_toolkit import Application
 from prompt_toolkit.data_structures import Size
+from prompt_toolkit.layout import Layout, Window
 from prompt_toolkit.styles import Style
+from terminaltexteffects.effects import effect_rain
+from terminaltexteffects.effects.effect_slide import Slide
 
 from tspace.client.logging import log
 from tspace.client.util import sync_to_async
@@ -29,6 +32,7 @@ class TwApplication(Application):
         super().__init__(
             mouse_support=True,
             full_screen=True,
+            refresh_interval=0.03,
             style=Style([("dialog", "bg:#fff333")]),
         )
 

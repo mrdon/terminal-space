@@ -14,7 +14,7 @@ format: ## Format the imports and code
 	pdm run black -l 88 -t py37 tspace
 
 pyenv: ## Create a virtualenv
-	pdm init
+	pdm install
 
 run: ## Run the app
 	pdm run python -m tspace.client_app
