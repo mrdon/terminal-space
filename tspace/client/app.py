@@ -33,7 +33,7 @@ class TwApplication(Application):
             mouse_support=True,
             full_screen=True,
             refresh_interval=0.03,
-            style=Style([("dialog", "bg:#fff333")]),
+            style=Style([("dialog.body", "bg:ansiblack")]),
         )
 
         self.title_scene = TitleScene(self)

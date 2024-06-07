@@ -1,7 +1,9 @@
 import asyncio
 from typing import List
 
+from prompt_toolkit.application import get_app
 from prompt_toolkit.data_structures import Point
+from prompt_toolkit.layout import Window
 from terminaltexteffects.effects.effect_beams import Beams
 from terminaltexteffects.effects.effect_slide import Slide
 
@@ -20,6 +22,7 @@ from tspace.client.stream import Table
 from tspace.client.stream import Terminal
 from tspace.client.stream import print_action
 from tspace.client.stream import print_grid
+from tspace.client.ui.warp import WarpDialog
 
 
 class Actions:
@@ -130,7 +133,10 @@ class Prompt:
         print_action(self.out, "Move")
         if target_id in self.player.sector.warps:
 
-            await self.beams_animated_prompt(f"<< Warping to Sector {target_id} >>")
+            dialog = WarpDialog(target_id)
+            await dialog.show()
+            # get_app().invalidate()
+            # await self.beams_animated_prompt(f"<< Warping to Sector {target_id} >>")
             self.out.nl(2)
             # self.out.write_line(
             #     ("magenta", "Warping to Sector "), ("yellow", str(target_id))

@@ -104,7 +104,7 @@ class MenuDialog(object):
             body=Frame(
                 title=lambda: self.title,
                 body=frame_body,
-                style="class:dialog.body",
+                style="",
                 width=(None if background is None else width),
                 key_bindings=kb,
                 modal=modal,
