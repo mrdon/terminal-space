@@ -104,22 +104,6 @@ class Prompt:
             ("magenta", ")? : "),
         )
 
-    async def beams_animated_prompt(self, prompt_text: str) -> str:
-        effect = Beams(prompt_text)
-        effect.effect_config.final_gradient_frames = 1
-        effect.effect_config.merge = True  #
-        for frame in effect:
-            self.out.write_ansi_raw(frame)
-            await asyncio.sleep(.00004)
-
-    async def slide_animated_prompt(self, prompt_text: str) -> str:
-        effect = Slide(prompt_text)
-        effect.effect_config.final_gradient_frames = 1
-        effect.effect_config.merge = True  #
-        for frame in effect:
-            self.out.write_ansi_raw(frame)
-            await asyncio.sleep(.00004)
-
     async def do_move(self, target_sector):
         """
         Move to an adjacent sector
@@ -134,7 +118,7 @@ class Prompt:
         if target_id in self.player.sector.warps:
 
             dialog = WarpDialog(target_id)
-            await dialog.show()
+            dialog_task = asyncio.create_task(dialog.show())
             # get_app().invalidate()
             # await self.beams_animated_prompt(f"<< Warping to Sector {target_id} >>")
             self.out.nl(2)
@@ -145,6 +129,8 @@ class Prompt:
 
             sector_client = await self.actions.move_trader(sector_id=target_id)
             s = self.game.update_sector(sector_client)
+            dialog.set_next_sector(s)
+            await dialog_task
 
             self.game.player.ship.sector_id = s.id
             self.game.player.visited.add(s.id)

@@ -97,9 +97,9 @@ class Terminal:
         #         self.buffer.insert_after(formatted_text)
         #     else:
         #         # if op.op == CursorOpType.MOVE:
-                #     # log.info(f"mov: x:{op.x_mod} y:{op.y_mod}")
-                #     self.buffer.cursor_position = Point(self.buffer.cursor_position.x + op.x_mod,
-                #                                self.buffer.cursor_position.y + op.y_mod)
+        #     # log.info(f"mov: x:{op.x_mod} y:{op.y_mod}")
+        #     self.buffer.cursor_position = Point(self.buffer.cursor_position.x + op.x_mod,
+        #                                self.buffer.cursor_position.y + op.y_mod)
 
 
 @dataclass
@@ -342,19 +342,35 @@ class ANSICursor:
 
                         # move pos up
                         elif char == "A":
-                            self.parsed.append(CursorOperation(CursorOpType.MOVE, y_mod=params[0] * -1, x_mod=0))
+                            self.parsed.append(
+                                CursorOperation(
+                                    CursorOpType.MOVE, y_mod=params[0] * -1, x_mod=0
+                                )
+                            )
                             break
                         # move pos down
                         elif char == "B":
-                            self.parsed.append(CursorOperation(CursorOpType.MOVE, y_mod=params[0], x_mod=0))
+                            self.parsed.append(
+                                CursorOperation(
+                                    CursorOpType.MOVE, y_mod=params[0], x_mod=0
+                                )
+                            )
                             break
                         # move pos right
                         elif char == "C":
-                            self.parsed.append(CursorOperation(CursorOpType.MOVE, y_mod=0, x_mod=params[0]))
+                            self.parsed.append(
+                                CursorOperation(
+                                    CursorOpType.MOVE, y_mod=0, x_mod=params[0]
+                                )
+                            )
                             break
                         # move pos left
                         elif char == "D":
-                            self.parsed.append(CursorOperation(CursorOpType.MOVE, y_mod=0, x_mod=params[0]))
+                            self.parsed.append(
+                                CursorOperation(
+                                    CursorOpType.MOVE, y_mod=0, x_mod=params[0]
+                                )
+                            )
                             break
                         else:
                             invalid_code = "".join(csi_buffer)
@@ -370,5 +386,3 @@ class ANSICursor:
                 #       be "Exploded" once again when it's rendered to the
                 #       output.
                 self.parsed.append(c)
-
-

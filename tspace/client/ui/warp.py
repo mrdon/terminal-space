@@ -2,44 +2,76 @@ import asyncio
 from asyncio import Future
 
 from prompt_toolkit.application import get_app
-from prompt_toolkit.layout import HSplit, Float, FloatContainer, Container, AnyContainer
-from prompt_toolkit.widgets import Dialog, Label, Button, Box, Frame
+from prompt_toolkit.layout import (
+    HSplit,
+    Float,
+    FloatContainer,
+    Container,
+    AnyContainer,
+    DynamicContainer,
+)
+from prompt_toolkit.widgets import Dialog, Label, Box, Frame
 
+from tspace.client.logging import log
+from tspace.client.models import Sector
+from tspace.client.ui.button import Button
 from tspace.client.ui.draw import AnimatedPlanetApproach
 from tspace.client.ui.starfield import Starfield
 
 
-class WarpDialog:
+def dyn_container():
+    return getattr(dyn_container, "blah", None)
+
+
+class WarpDialog(Dialog):
     def __init__(self, sector_id: int):
         self._dims = get_app().output.get_size()
         self._starfield = Starfield()
-        self.container = Frame(
-                title=lambda: f"Warping to {sector_id}",
-                body=HSplit(children=[self._starfield],
-                                     width=int(self._dims.columns / 2), height=int(self._dims.rows / 2)),
-                style="class:dialog.body",
-                width=None,
-                modal=True,
-            )
-
+        self.body = HSplit(
+            children=[self._starfield],
+            width=int(self._dims.columns / 2),
+            height=int(self._dims.rows / 2),
+        )
+        dyn_container.blah = self.body
+        self.ok_btn = Button(text="OK", disabled=True, handler=self._on_ok)
+        super().__init__(
+            body=DynamicContainer(dyn_container),
+            title=f"Warping to {sector_id}",
+            buttons=[self.ok_btn],
+            modal=True,
+        )
+        self._sector_future = Future()
         self.future = Future()
 
-    def __pt_container__(self) -> AnyContainer:
-        return self.container
+    def set_next_sector(self, sector: Sector):
+        self._sector_future.set_result(sector)
+
+    def _on_ok(self):
+        self.future.set_result(None)
 
     async def show(self):
         async def speed_up():
-            for _ in range(3):
+            for _ in range(4):
                 self._starfield.speed *= 2.5
                 await asyncio.sleep(0.5)
+            next_sector = await self._sector_future
 
-            self.container.body = HSplit(children=[AnimatedPlanetApproach(10)],
-                   width=int(self._dims.columns / 2), height=int(self._dims.rows / 2))
+            self.body = HSplit(
+                children=[
+                    AnimatedPlanetApproach(
+                        3,
+                        port=bool(next_sector.ports),
+                        planet=bool(next_sector.planets),
+                    )
+                ],
+                width=int(self._dims.columns / 2),
+                height=int(self._dims.rows / 2),
+            )
             await asyncio.sleep(3)
             # for _ in range(3):
             #     self._starfield.speed /= 2.5
             #     await asyncio.sleep(0.5)
-            self.future.set_result(None)
+            self.ok_btn.disabled = False
 
         asyncio.create_task(speed_up())
         return await show_dialog_as_float(self)

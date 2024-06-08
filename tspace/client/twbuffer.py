@@ -8,8 +8,6 @@ from prompt_toolkit.layout.screen import Point
 from tspace.client.logging import log
 
 
-
-
 class TwBuffer:
     def __init__(self):
         self.buffer: List[List[Tuple[str, str]]] = [[]]
@@ -18,8 +16,9 @@ class TwBuffer:
         self.input_listeners: List[Callable[[str], None]] = []
         self.change_listeners: List[Callable[[], None]] = []
 
-
-    def insert_after(self, *text: Sequence[Tuple[str, str]], cursor_pos: Point | None = None):
+    def insert_after(
+        self, *text: Sequence[Tuple[str, str]], cursor_pos: Point | None = None
+    ):
         if not isinstance(text, (Tuple, List)):
             raise ValueError()
 
@@ -108,5 +107,3 @@ class TwBuffer:
                 line[-1] = (last[0], chars)
 
         self._set_cursor_to_buffer_end()
-
-

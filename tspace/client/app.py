@@ -32,12 +32,18 @@ class TwApplication(Application):
         super().__init__(
             mouse_support=True,
             full_screen=True,
-            refresh_interval=0.03,
-            style=Style([("dialog.body", "bg:ansiblack")]),
+            refresh_interval=1 / 15,
+            style=Style(
+                [
+                    ("dialog.body", "bg:ansiblack"),
+                    ("button.disabled", "bg:ansiblack fg:ansiblack"),
+                ]
+            ),
         )
 
         self.title_scene = TitleScene(self)
         self.layout = self.title_scene.layout
+        self.fps = 15
 
         actual: Size = self.output.get_size()
         expected = Size(rows=40, columns=120)

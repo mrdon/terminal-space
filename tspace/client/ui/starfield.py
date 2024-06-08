@@ -34,7 +34,7 @@ class Starfield(UIControl):
         self.speed = 0.03
 
     def init_stars(self):
-        """ Create the starfield """
+        """Create the starfield"""
         self.stars = []
         for i in range(self.num_stars):
             # A star is represented as a list with this format: [X,Y,Z]
@@ -42,7 +42,7 @@ class Starfield(UIControl):
             self.stars.append(star)
 
     def move_stars(self, width, height):
-        """ Move and draw the stars """
+        """Move and draw the stars"""
         origin_x = width / 2
         origin_y = height / 2
 

@@ -153,8 +153,10 @@ class Prompt(SimpleMenuCmd):
                             ),
                             default=True,
                         ):
-                            player_client, port_client = await self.actions.sell_to_port(
-                                port_id=port.id, commodity=c.type, amount=value
+                            player_client, port_client = (
+                                await self.actions.sell_to_port(
+                                    port_id=port.id, commodity=c.type, amount=value
+                                )
                             )
                             self.game.update_player(player_client)
                             self.game.update_port(port_client)
@@ -210,8 +212,10 @@ class Prompt(SimpleMenuCmd):
                             ],
                             default=True,
                         ):
-                            player_client, port_client = await self.actions.buy_from_port(
-                                port_id=port.id, commodity=c.type, amount=value
+                            player_client, port_client = (
+                                await self.actions.buy_from_port(
+                                    port_id=port.id, commodity=c.type, amount=value
+                                )
                             )
                             self.game.update_player(player_client)
                             self.game.update_port(port_client)

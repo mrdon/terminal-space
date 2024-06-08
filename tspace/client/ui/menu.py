@@ -180,7 +180,7 @@ class MenuButton:
         ]
 
     def _get_key_bindings(self):
-        " Key bindings for the Button. "
+        "Key bindings for the Button."
         kb = KeyBindings()
 
         @kb.add(" ")
