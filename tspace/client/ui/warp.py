@@ -56,18 +56,23 @@ class WarpDialog(Dialog):
                 await asyncio.sleep(0.5)
             next_sector = await self._sector_future
 
+            has_port = bool(next_sector.ports)
+            has_planet = bool(next_sector.planets)
+            has_something = has_planet or has_port
+
             self.body = HSplit(
                 children=[
                     AnimatedPlanetApproach(
                         3,
-                        port=bool(next_sector.ports),
-                        planet=bool(next_sector.planets),
+                        port=has_port,
+                        planet=has_planet,
                     )
                 ],
                 width=int(self._dims.columns / 2),
                 height=int(self._dims.rows / 2),
             )
-            await asyncio.sleep(3)
+            if has_something:
+                await asyncio.sleep(3)
             # for _ in range(3):
             #     self._starfield.speed /= 2.5
             #     await asyncio.sleep(0.5)
