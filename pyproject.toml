@@ -35,4 +35,5 @@ dev = [
     "bump-my-version>=0.21",
     "wheel>=0.43.0",
     "pytest>=8.2.1",
+    "build>=1.2.1",
 ]
