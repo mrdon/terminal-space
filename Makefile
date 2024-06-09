@@ -14,7 +14,7 @@ format: ## Format the imports and code
 	pdm run black -l 88 -t py37 tspace
 
 pyenv: ## Create a virtualenv
-	pdm install
+	pdm install -d
 
 run: ## Run the app
 	pdm run python -m tspace.client_app
@@ -33,9 +33,9 @@ bin: ## Build a single file distribution
 	echo "Run the app with:\n\ndist/tspace-client"
 
 release: clean  ## Release the game to pypi
-	bumpversion release --allow-dirty
-	python setup.py sdist
-	python setup.py bdist_wheel
-	twine upload dist/*
-	bumpversion --no-tag patch
+	pdm run bump2version release --allow-dirty
+	pdm run python setup.py sdist
+	pdm run python setup.py bdist_wheel
+	pdm run twine upload dist/*
+	pdm run bump2version --no-tag patch
 	git push origin master --tags

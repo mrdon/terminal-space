@@ -1,7 +1,7 @@
 [project]
 name = "terminal-space"
 version = "0.1.2-dev"
-description = "Default template for PDM package"
+description = "A text-based space trading game"
 authors = [
     {name = "Don Brown", email = "mrdon@twdata.org"},
 ]
@@ -32,7 +32,7 @@ dev = [
     "black>=24.4.2",
     "pyinstaller>=6.7",
     "twine>=5.1.0",
-    "bumpversion>=0.6.0",
+    "bump-my-version>=0.21",
     "wheel>=0.43.0",
     "pytest>=8.2.1",
 ]
