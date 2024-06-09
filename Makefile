@@ -33,9 +33,8 @@ bin: ## Build a single file distribution
 	echo "Run the app with:\n\ndist/tspace-client"
 
 release: clean  ## Release the game to pypi
-	pdm run bump2version release --allow-dirty
-	pdm run python setup.py sdist
-	pdm run python setup.py bdist_wheel
+	pdm run bump-my-version bump pre_l
+	pdm run python -m build
 	pdm run twine upload dist/*
-	pdm run bump2version --no-tag patch
+	pdm run bump-my-version --no-tag patch
 	git push origin master --tags
