@@ -1,6 +1,6 @@
 [project]
 name = "terminal-space"
-version = "0.2.0-dev"
+version = "0.2.0"
 description = "A text-based space trading game"
 authors = [
     {name = "Don Brown", email = "mrdon@twdata.org"},
