@@ -15,13 +15,12 @@ It currently implements the TradeWars basics of a universe, sectors, and ports, 
 ### Roadmap
 
  * 0.1 (released) - Basic client/server model with structured text ui and simple TW2002 gameplay
- * 0.2 - Explore turn-based combat ala JRPGs like Octopath.  Focus on game mechanics.
- * 0.3 - Server and client saving, maybe host a game
- * 0.4 - Who knows...
+ * 0.2 - Play with some generated animation bits
+ * 0.3 - Who knows...maybe turn-based combat ala JRPGs?
  
 ## Installation
 
-To run it, install Python 3.7 and run:
+To run it, install Python 3.12 and run:
 
     pip3 install terminal-space
 
@@ -37,10 +36,9 @@ To run the server standalone (needed for the "Join Game" option), run:
     
 ## Development 
 
-To install it locally, run:
+To install it locally, install [pdm](https://github.com/pdm-project/pdm) and run:
 
-    make virtualenv
-    source venv/bin/activate
+    make pyenv
  
 To run the client, type:
 
