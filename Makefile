@@ -36,5 +36,5 @@ release: clean  ## Release the game to pypi
 	pdm run bump-my-version bump pre_l
 	pdm run python -m build
 	pdm run twine upload dist/*
-	pdm run bump-my-version patch
+	pdm run bump-my-version patch --no-tag
 	git push origin main --tags
