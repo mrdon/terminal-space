@@ -177,6 +177,14 @@ class Player:
         self.ship_id = new_ship_id
 
 
+class Battle:
+    def __init__(self, game: Galaxy, id: int, sector_id: int, player_ids: list[int]):
+        self.id = id
+        self.game = game
+        self.sector_id = sector_id
+        self.player_ids = player_ids
+
+
 @dataclass
 class ShipType:
     name: str
