@@ -1,10 +1,13 @@
+import asyncio
 import inspect
 import json
 import types
 from functools import wraps
-from typing import Any
+from typing import Any, Awaitable
 
-from tspace import json_types
+from pydantic import BaseModel
+
+from tspace import common
 
 
 class AutoIncrementId:
@@ -17,6 +20,11 @@ class AutoIncrementId:
         return result
 
 
+class ClientMessage(BaseModel):
+    type: str
+    id: int
+
+
 def methods_to_json(sink_property="target"):
     autoid = AutoIncrementId()
 
@@ -26,7 +34,7 @@ def methods_to_json(sink_property="target"):
             target = getattr(self, sink_property)
             obj = {"type": func.__name__, "id": autoid.incr()}
             obj.update(kwargs)
-            data = json_types.encodes(obj, exclude_none=True, set_as_list=True)
+            data = json.dumps(obj, exclude_none=True, set_as_list=True)
             resp = target(data)
             if not inspect.isawaitable(resp):
                 breakpoint()
@@ -71,7 +79,7 @@ class CallMethodOnEventType:
                 continue
 
             if func:
-                kwargs = json_types.decode(event, func, context=self.context)
+                kwargs = common.decode(event, func, context=self.context)
                 kwargs["parent_id"] = event["id"]
                 return await func(**kwargs)
 
@@ -88,3 +96,5 @@ class AutoIdDict(dict):
         self[key] = val
         val.id = key
         return val
+
+

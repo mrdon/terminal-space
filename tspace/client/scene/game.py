@@ -88,7 +88,7 @@ class TerminalScene:
         )
 
         def do_exit():
-            self.session.quit()
+            self.session._quit()
 
         menu_container = MenuContainer(
             body=root_container,
@@ -144,16 +144,6 @@ class TerminalScene:
         return [
             Stat(title="Name", callable=lambda: ship().name),
             Stat(title="Type", callable=lambda: ship().type),
-            Stat(
-                title="Weapons",
-                multiline=True,
-                callable=lambda: [w.name for w in ship().weapons],
-            ),
-            Stat(
-                title="Countermeasures",
-                multiline=True,
-                callable=lambda: [w.name for w in ship().countermeasures],
-            ),
         ]
 
     def get_warps_label(self, condition: Callable[[], bool]):
@@ -254,7 +244,7 @@ class TerminalScene:
         return frags
 
     async def start(self):
-        return await self.session.start(self.writer)
+        return await self.session._start(self.writer)
 
     def end(self):
         pass

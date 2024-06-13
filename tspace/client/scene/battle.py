@@ -89,7 +89,7 @@ class BattleScene:
         )
 
         def do_exit():
-            self.session.quit()
+            self.session._quit()
 
         menu_container = MenuContainer(
             body=root_container,
@@ -255,7 +255,7 @@ class BattleScene:
         return frags
 
     async def start(self):
-        return await self.session.start(self.writer)
+        return await self.session._start(self.writer)
 
     def end(self):
         pass

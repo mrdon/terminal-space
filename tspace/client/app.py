@@ -5,17 +5,15 @@ from asyncio import Queue
 import aiohttp
 from prompt_toolkit import Application
 from prompt_toolkit.data_structures import Size
-from prompt_toolkit.layout import Layout, Window
 from prompt_toolkit.styles import Style
-from terminaltexteffects.effects import effect_rain
-from terminaltexteffects.effects.effect_slide import Slide
 
 from tspace.client.logging import log
-from tspace.client.util import sync_to_async
-from tspace.server.config import GameConfig
-from tspace.server.server import Server
 from tspace.client.scene.game import TerminalScene
 from tspace.client.scene.main_menu import TitleScene
+from tspace.client.util import sync_to_async
+from tspace.common.background import schedule_background_task
+from tspace.server.config import GameConfig
+from tspace.server.server import Server
 
 
 class InvalidScreenSize(Exception):
@@ -101,7 +99,7 @@ class TwApplication(Application):
                         await ws.send_str(msg)
 
                 write_task = asyncio.create_task(write_output())
-                asyncio.create_task(read_input())
+                schedule_background_task(read_input())
 
                 try:
                     await terminal_scene.start()
@@ -130,6 +128,7 @@ class TwApplication(Application):
         async def read_from_server():
             while True:
                 msg = await server_to_app.get()
+                log.info(f"got server-to_app: {msg}")
                 await terminal_scene.session.bus(msg)
 
         server_out_task = asyncio.create_task(read_from_server())

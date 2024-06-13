@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from typing import List, Dict, Iterable, Tuple
 from typing import Optional, TYPE_CHECKING
 
+from pydantic import BaseModel
+
 if TYPE_CHECKING:
     from tspace.server.galaxy import Galaxy
 
@@ -185,8 +187,7 @@ class Battle:
         self.player_ids = player_ids
 
 
-@dataclass
-class ShipType:
+class ShipType(BaseModel):
     name: str
     cost: int
     holds_initial: int

@@ -4,19 +4,16 @@ import enum
 import typing
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
+
+from pydantic import BaseModel
+
 from tspace.client.stream import Fragment
 
 if typing.TYPE_CHECKING:
     from tspace.client.game import Game
 
 
-@dataclass
-class GameConfigClient:
+class GameConfigClient(BaseModel):
     id: int
     name: str
     diameter: int
@@ -37,59 +34,10 @@ class DamageType(enum.Enum):
     EXPLOSIVE = "Explosive"
 
 
-@dataclass
-class WeaponClient:
+class PlanetClient(BaseModel):
     id: int
     name: str
-    accuracy_bonus: int
-    damage_min: int
-    damage_max: int
-    damage_type: str
-
-
-class Weapon:
-    def __init__(self, game: Game, weapon: WeaponClient):
-        self._game = game
-        self.id: int = weapon.id
-        self.update(weapon)
-
-    def update(self, weapon: WeaponClient):
-        self.name = weapon.name
-        self.accuracy_bonus = weapon.accuracy_bonus
-        self.damage_min: int = weapon.damage_min
-        self.damage_max = weapon.damage_max
-        self.damage_type = getattr(DamageType, weapon.damage_type.upper())
-
-
-@dataclass
-class CountermeasureClient:
-    id: int
-    name: str
-    strengths: List[str]
-    strength_bonus: int
-    weaknesses: List[str]
-    weakness_penalty: int
-
-
-class Countermeasure:
-    def __init__(self, game: Game, countermeasure: CountermeasureClient):
-        self._game = game
-        self.id: int = countermeasure.id
-        self.update(countermeasure)
-
-    def update(self, countermeasure: CountermeasureClient):
-        self.name = countermeasure.name
-        self.strengths = [getattr(DamageType, dt) for dt in countermeasure.strengths]
-        self.strength_bonus = countermeasure.strength_bonus
-        self.weaknesses = [getattr(DamageType, dt) for dt in countermeasure.weaknesses]
-        self.weakness_penalty = countermeasure.weakness_penalty
-
-
-@dataclass
-class PlanetClient:
-    id: int
-    name: str
-    regions: List
+    regions: list
     planet_type: str
     fuel_ore: int
     organics: int
@@ -127,8 +75,7 @@ class Planet:
         return self._game.traders[self.owner_id] if self.owner_id else None
 
 
-@dataclass
-class TradingCommodityClient:
+class TradingCommodityClient(BaseModel):
     type: str
     buying: bool
     amount: int
@@ -160,12 +107,11 @@ class CommodityType(enum.Enum):
     equipment = "Equipment"
 
 
-@dataclass
-class PortClient:
+class PortClient(BaseModel):
     id: int
     sector_id: int
     name: str
-    commodities: List[TradingCommodityClient]
+    commodities: list[TradingCommodityClient]
 
 
 class Port:
@@ -185,7 +131,7 @@ class Port:
         self.id = client.id
         self.sector_id = client.sector_id
         self.name: str = ""
-        self.commodities: Dict[CommodityType, TradingCommodity] = {}
+        self.commodities: dict[CommodityType, TradingCommodity] = {}
         self.update(client)
 
     def update(self, client: PortClient):
@@ -214,7 +160,7 @@ class Port:
         return "".join(name)
 
     @property
-    def class_name_colored(self) -> List[Fragment]:
+    def class_name_colored(self) -> list[Fragment]:
         line = []
         for c in self.class_name:
             line.append(Fragment("cyan", c) if c == "B" else Fragment("green", c))
@@ -225,8 +171,7 @@ class Port:
         return self.CLASSES[self.class_name]
 
 
-@dataclass
-class TraderClient:
+class TraderClient(BaseModel):
     id: int
     name: str
 
@@ -241,8 +186,7 @@ class Trader:
         self.name = client.name
 
 
-@dataclass
-class TraderShipClient:
+class TraderShipClient(BaseModel):
     id: int
     name: str
     trader: TraderClient
@@ -260,17 +204,16 @@ class TraderShip:
         self.trader_id = client.trader.id
 
     @property
-    def trader(self) -> Optional[Trader]:
+    def trader(self) -> Trader | None:
         return self._game.traders.get(self.trader_id)
 
 
-@dataclass
-class SectorClient:
+class SectorClient(BaseModel):
     id: int
-    warps: List[int]
-    ports: List[PortClient]
-    ships: List[TraderShipClient]
-    planets: List[PlanetClient]
+    warps: list[int]
+    ports: list[PortClient]
+    ships: list[TraderShipClient]
+    planets: list[PlanetClient]
 
 
 class Sector:
@@ -287,29 +230,26 @@ class Sector:
         self.planet_ids = [p.id for p in client.planets]
 
     @property
-    def ports(self) -> List[Port]:
+    def ports(self) -> list[Port]:
         return [self._game.ports[port_id] for port_id in self.port_ids]
 
     @property
-    def ships(self) -> List[TraderShip]:
+    def ships(self) -> list[TraderShip]:
         return [
             self._game.trader_ships.get(ship_id) for ship_id in self.trader_ship_ids
         ]
 
     @property
-    def planets(self) -> List[Planet]:
+    def planets(self) -> list[Planet]:
         return [self._game.planets.get(id) for id in self.planet_ids]
 
 
-@dataclass
-class ShipClient:
+class ShipClient(BaseModel):
     id: int
     name: str
     type: str
     holds_capacity: int
-    holds: Dict[str, int]
-    weapons: List[WeaponClient]
-    countermeasures: List[CountermeasureClient]
+    holds: dict[str, int]
     sector: SectorClient
 
 
@@ -321,7 +261,7 @@ class Ship:
         self.holds_capacity: int = 0
         self.sector_id: int = 0
 
-        self.holds: Dict[CommodityType, int] = defaultdict(lambda: 0)
+        self.holds: dict[CommodityType, int] = defaultdict(lambda: 0)
         self.update(client)
 
     def update(self, client: ShipClient):
@@ -331,13 +271,9 @@ class Ship:
 
         self.holds.update({CommodityType[k]: v for k, v in client.holds.items()})
         self.sector_id = client.sector.id if client.sector else None
-        self.weapons = [Weapon(self._game, weapon) for weapon in client.weapons]
-        self.countermeasures = [
-            Countermeasure(self._game, cm) for cm in client.countermeasures
-        ]
 
     @property
-    def sector(self) -> Optional[Sector]:
+    def sector(self) -> Sector | None:
         return None if not self.sector_id else self._game.sectors[self.sector_id]
 
     @property
@@ -345,8 +281,7 @@ class Ship:
         return self.holds_capacity - sum(self.holds.values())
 
 
-@dataclass
-class PlayerClient:
+class PlayerClient(BaseModel):
     id: int
     name: int
     credits: int
@@ -357,7 +292,7 @@ class Player:
     def __init__(self, game: Game, client: PlayerClient):
         self._game = game
         self.id = client.id
-        self.visited: Set[int] = set()
+        self.visited: set[int] = set()
         self.credits: int = 0
         self.name: str = ""
         self.ship_id: int = 0
@@ -370,13 +305,13 @@ class Player:
         self.ship_id = client.ship.id if client.ship else None
 
     @property
-    def ship(self) -> Optional[Ship]:
+    def ship(self) -> Ship | None:
         return None if not self.ship_id else self._game.ships.get(self.ship_id)
 
     @property
-    def port(self) -> Optional[Port]:
+    def port(self) -> Port | None:
         return None if not self.port_id else self._game.ports.get(self.port_id)
 
     @property
-    def sector(self) -> Optional[Sector]:
+    def sector(self) -> Sector | None:
         return None if not self.ship_id else self.ship.sector

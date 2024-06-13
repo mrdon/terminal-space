@@ -12,7 +12,8 @@ from typing import Iterable
 from typing import Sequence
 from typing import Tuple
 
-from tspace import json_types
+from tspace import common
+from tspace.common.rpc import ClientAndServer
 
 
 def frag_join(
@@ -28,90 +29,27 @@ def frag_join(
         yield frag
 
 
-class AutoIncrementId:
-    def __init__(self):
-        self.id = 1
-
-    def incr(self):
-        result = self.id
-        self.id += 1
-        return result
-
-
-@dataclass
-class WaitForResponse:
-    future: Future
-    type: typing.Type
-
-
 class EventBus:
-    autoid = AutoIncrementId()
-
     def __init__(
-        self, *target: Any, context=None, sender: Callable[[str], Awaitable[None]]
+        self, target: Any, *, context=None, sender: Callable[[str], Awaitable[None]]
     ):
-        self.targets = list(target)
+
+        self._api = ClientAndServer(sender)
+        self._api.register_methods(target)
         self.context = context
-        self.sender = sender
-        self.wait_for_ids: typing.Dict[int, WaitForResponse] = {}
 
     def wire_sending_methods(self, cls):
-        out_self = self
 
-        def sender(func):
-            @wraps(func)
-            async def inner(*_, **kwargs):
-                target = out_self.sender
-                event_id = out_self.autoid.incr()
-                globalns = {
-                    "Dict": typing.Dict,
-                    "List": typing.List,
-                    "Type": typing.Type,
-                    "Tuple": typing.Tuple,
-                }
-
-                hints = typing.get_type_hints(
-                    func, localns=self.context, globalns=globalns
-                )
-                # breakpoint()
-                if hints and "return" in hints:
-                    return_type = hints["return"]
-                    self.wait_for_ids[event_id] = WaitForResponse(
-                        type=return_type, future=Future()
-                    )
-                else:
-                    return_type = None
-
-                obj = {"type": func.__name__, "id": event_id}
-                obj.update(kwargs)
-                data = json_types.encodes(obj, exclude_none=True, set_as_list=True)
-                resp = target(data)
-                if not inspect.isawaitable(resp):
-                    breakpoint()
-                await resp
-
-                if return_type:
-                    return await self.wait_for_ids[event_id].future
-
-            return inner
-
-        for name, fn in {
-            name: fn
-            for name, fn in inspect.getmembers(cls)
-            if isinstance(fn, types.FunctionType) and not name.startswith("__")
-        }.items():
-            setattr(cls, name, sender(fn))
-        return cls
+        return self._api.build_client(cls)
 
     def append_event_listener(self, target: Any):
         if target is None:
             breakpoint()
-        if target not in self.targets:
-            self.targets.append(target)
+
+        self._api.register_methods(target)
 
     def remove_event_listener(self, target: Any):
-        if target in self.targets:
-            self.targets.remove(target)
+        self._api.unregister_methods(target)
 
     async def __call__(self, data: str):
         event = json.loads(data)
@@ -127,11 +65,11 @@ class EventBus:
             if origin and issubclass(origin, tuple):
                 result = []
                 for t in waited.type.__args__:
-                    obj = json_types.decode(args.pop(0), t, context=self.context)
+                    obj = common.decode(args.pop(0), t, context=self.context)
                     result.append(obj)
                 obj = (*result,)
             else:
-                obj = json_types.decode(args.pop(0), waited.type, context=self.context)
+                obj = common.decode(args.pop(0), waited.type, context=self.context)
             waited.future.set_result(obj)
 
         else:
@@ -142,7 +80,7 @@ class EventBus:
                     continue
 
                 if func:
-                    kwargs = json_types.decode(event, func, context=self.context)
+                    kwargs = common.decode(event, func, context=self.context)
                     return await sync_to_async(func)(**kwargs)
 
             raise ValueError(f"No listeners found for {event_type} in {self.targets}")

@@ -4,7 +4,7 @@ from typing import List
 
 import networkx as nx
 
-from tspace.client.models import GameConfig, WeaponClient
+from tspace.client.models import GameConfig
 from tspace.client.models import Planet
 from tspace.client.models import PlanetClient
 from tspace.client.models import Player

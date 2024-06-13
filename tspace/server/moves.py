@@ -1,143 +1,203 @@
 from __future__ import annotations
 
+import asyncio
 import traceback
 import typing
 from typing import Callable
 
-from tspace import json_types
+from pydantic import BaseModel
 
+from tspace.common.background import schedule_background_task
 from tspace.server.config import GameConfig
-from tspace.server.models import CommodityType, Weapon, Countermeasure
-
+from tspace.server.models import CommodityType, ShipType
 from tspace.server.models import Planet
 from tspace.server.models import Player
 from tspace.server.models import Port
 from tspace.server.models import Sector
 from tspace.server.models import Ship
 from tspace.server.models import TradingCommodity
-from tspace.server.util import methods_to_json
 
 if typing.TYPE_CHECKING:
     from tspace.server.server import Server
     from tspace.server.models import Galaxy
 
 
-class GameConfigPublic:
-    def __init__(self, config: GameConfig, sectors_count: int):
-        self.id = config.id
-        self.name = config.name
-        self.diameter = config.diameter
-        self.sectors_count = sectors_count
+class GameConfigPublic(BaseModel):
+    id: int
+    name: str
+    diameter: int
+    sectors_count: int
+
+    @staticmethod
+    def from_inner(config: GameConfig, sectors_count: int) -> GameConfigPublic:
+        return GameConfigPublic(
+            id=config.id,
+            name=config.name,
+            diameter=config.diameter,
+            sectors_count=sectors_count,
+        )
 
 
-class PlayerPublic:
-    def __init__(self, player: Player):
-        self.id = player.id
-        self.name = player.name
-        self.ship = ShipPublic(player.ship, player.sector)
-        self.credits = player.credits
-        self.sector = SectorPublic(player.sector)
-        self.port = None if not player.port else PortPublic(player.port)
+class PlayerPublic(BaseModel):
+    id: int
+    name: str
+    ship: ShipPublic
+    credits: int
+    sector: SectorPublic
+    port: PortPublic | None
+
+    @staticmethod
+    def from_inner(player: Player) -> PlayerPublic:
+        return PlayerPublic(
+            id=player.id,
+            name=player.name,
+            ship=ShipPublic.from_inner(player.ship, player.sector),
+            credits=player.credits,
+            sector=SectorPublic.from_inner(player.sector),
+            port=None if not player.port else PortPublic.from_inner(player.port),
+        )
 
 
-class TraderPublic:
-    def __init__(self, player: Player):
-        self.id = player.id
-        self.name = player.name
+class TraderPublic(BaseModel):
+    id: int
+    name: str
+
+    @staticmethod
+    def from_inner(player: Player) -> TraderPublic:
+        return TraderPublic(
+            id=player.id,
+            name=player.name,
+        )
 
 
-class TraderShipPublic:
-    def __init__(self, ship: Ship):
-        self.id = ship.id
-        self.name = ship.name
-        self.type = ship.ship_type
-        self.trader = TraderPublic(ship.player)
+class TraderShipPublic(BaseModel):
+    id: int
+    name: str
+    type: ShipType
+    trader: TraderPublic
+
+    @staticmethod
+    def from_inner(ship: Ship) -> TraderShipPublic:
+        return TraderShipPublic(
+            id=ship.id,
+            name=ship.name,
+            type=ship.ship_type,
+            trader=TraderPublic.from_inner(ship.player)
+        )
 
 
-class ShipPublic:
-    def __init__(self, ship: Ship, sector: Sector):
-        self.id = ship.id
-        self.name = ship.name
-        # self.type = ship.ship_type
-        self.holds_capacity = ship.holds_capacity
-        self.holds = {t.name: val for t, val in ship.holds.items()}
-        self.sector = SectorPublic(sector)
-        self.weapons = [WeaponPublic(w) for w in ship.weapons]
-        self.countermeasures = [CountermeasurePublic(w) for w in ship.countermeasures]
-        self.type = ship.ship_type.name
+class ShipPublic(BaseModel):
+    id: int
+    name: str
+    holds_capacity: int
+    holds: dict[CommodityType, int]
+    sector: SectorPublic
+    type: str
+
+    @staticmethod
+    def from_inner(ship: Ship, sector: Sector) -> ShipPublic:
+        return ShipPublic(
+            id=ship.id,
+            name=ship.name,
+            holds_capacity=ship.holds_capacity,
+            holds={t.name: val for t, val in ship.holds.items()},
+            sector=SectorPublic.from_inner(sector),
+            type=ship.ship_type.name,
+        )
 
 
-class WeaponPublic:
-    def __init__(self, weapon: Weapon):
-        self.id = weapon.id
-        self.name = weapon.name
-        self.damage_type = weapon.damage_type.name
-        self.damage_min = weapon.damage_min
-        self.damage_max = weapon.damage_max
-        self.accuracy_bonus = weapon.accuracy_bonus
+class TradingCommodityPublic(BaseModel):
+    amount: int
+    capacity: int
+    buying: bool
+    type: str
+    price: float
+
+    @staticmethod
+    def from_inner(commodity: TradingCommodity) -> TradingCommodityPublic:
+        return TradingCommodityPublic(
+            amount=commodity.amount,
+            capacity=commodity.capacity,
+            buying=commodity.buying,
+            type=commodity.type.name,
+            price=commodity.price,
+        )
 
 
-class CountermeasurePublic:
-    def __init__(self, countermeasure: Countermeasure):
-        self.id = countermeasure.id
-        self.name = countermeasure.name
-        self.strengths = [s.name for s in countermeasure.strengths]
-        self.strength_bonus = countermeasure.strength_bonus
-        self.weaknesses = [s.name for s in countermeasure.weaknesses]
-        self.weakness_penalty = countermeasure.weakness_penalty
+class PortPublic(BaseModel):
+    id: int
+    name: str
+    sector_id: int
+    commodities: list[TradingCommodityPublic]
+
+    @staticmethod
+    def from_inner(port: Port) -> PortPublic:
+        return PortPublic(
+            id=port.id,
+            name=port.name,
+            sector_id=port.sector_id,
+            commodities=[TradingCommodityPublic.from_inner(c) for c in port.commodities]
+        )
 
 
-class TradingCommodityPublic:
-    def __init__(self, commodity: TradingCommodity):
-        self.amount = commodity.amount
-        self.capacity = commodity.capacity
-        self.buying = commodity.buying
-        self.type = commodity.type.name
-        self.price = commodity.price
+class SectorPublic(BaseModel):
+    id: int
+    coords: tuple[int, int]
+    warps: list[int]
+    ports: list[PortPublic]
+    ships: list[TraderShipPublic]
+    planets: list[PlanetPublic]
 
+    @staticmethod
+    def from_inner(sector: Sector) -> SectorPublic:
 
-class PortPublic:
-    def __init__(self, port: Port):
-        self.id = port.id
-        self.name = port.name
-        self.sector_id = port.sector_id
-        self.commodities = [TradingCommodityPublic(c) for c in port.commodities]
-
-
-class SectorPublic:
-    def __init__(self, sector: Sector):
-        self.id = sector.id
-        self.coords = sector.coords
-        self.warps = sector.warps
-        self.ports = [PortPublic(port) for port in sector.ports]
-
-        for port in self.ports:
+        ports = [PortPublic.from_inner(port) for port in sector.ports]
+        for port in ports:
             for c in port.commodities:
                 c.amount = None
                 c.capacity = None
                 c.price = None
-        self.ships = [TraderShipPublic(ship) for ship in sector.ships]
-        self.planets = [PlanetPublic(planet) for planet in sector.planets]
+
+        return SectorPublic(
+            id=sector.id,
+            coords=sector.coords,
+            warps=sector.warps,
+            ports=ports,
+            ships=[TraderShipPublic.from_inner(ship) for ship in sector.ships],
+            planets=[PlanetPublic.from_inner(planet) for planet in sector.planets],
+        )
 
 
-class PlanetPublic:
-    def __init__(self, planet: Planet):
-        self.id = planet.id
-        self.name = planet.name
-        self.owner = TraderPublic(planet.owner) if planet.owner else None
-        self.planet_type = planet.planet_type
+class PlanetPublic(BaseModel):
+    id: int
+    name: str
+    owner: TraderPublic | None
+    planet_type: str
+    fuel_ore: int
+    organics: int
+    equipment: int
 
-        self.fuel_ore = 0
-        self.organics = 0
-        self.equipment = 0
-        self.fighters = 0
+    @staticmethod
+    def from_inner(planet: Planet) -> PlanetPublic:
+        return PlanetPublic(
+            id=planet.id,
+            name=planet.name,
+            owner=TraderPublic.from_inner(planet.owner) if planet.owner else None,
+            planet_type=planet.planet_type,
+            fuel_ore=planet.fuel_ore,
+            organics=planet.organics,
+            equipment=planet.equipment,
+        )
 
 
-@methods_to_json()
+class Reply(BaseModel):
+    parent_id: str
+    args: list[typing.Any]
+    type: str = "reply"
+
+
+# @methods_to_json()
 class ServerEvents:
-    def __init__(self, target: Callable[[str], None]):
-        self.target = target
-
     async def on_game_enter(self, player: PlayerPublic, config: GameConfigPublic):
         pass
 
@@ -165,11 +225,6 @@ class ServerEvents:
     async def on_port_sell(self, id: int, player: PlayerPublic):
         pass
 
-    async def reply(self, parent_id, *args):
-        await self.target(
-            json_types.encodes({"type": "reply", "parent_id": parent_id, "args": args})
-        )
-
 
 class ShipMoves:
     def __init__(
@@ -181,7 +236,7 @@ class ShipMoves:
         self.events = events
         self.server = server
 
-    async def move_trader(self, parent_id: int, sector_id: int, **kwargs):
+    async def move_trader(self, sector_id: int, **kwargs) -> SectorPublic | None:
         if sector_id not in self.galaxy.sectors:
             await self.events.on_invalid_action(error="Not a valid sector number")
             return
@@ -205,26 +260,29 @@ class ShipMoves:
             target.enter_ship(ship)
             ship.move_sector(target.id)
             self.player.visit_sector(target.id)
-            target_public = SectorPublic(target)
-            await self.events.reply(parent_id, target_public)
+            target_public = SectorPublic.from_inner(target)
 
-            ship_as_trader = TraderShipPublic(ship)
-            for ship in (s for s in ship_sector.ships if s.player_id != self.player.id):
-                if ship.player_id in self.server.sessions:
-                    await self.server.sessions[ship.player_id].on_ship_exit_sector(
-                        sector=SectorPublic(ship_sector), ship=ship_as_trader
-                    )
+            async def do_after():
+                ship_as_trader = TraderShipPublic.from_inner(ship)
+                for ship_other in (s for s in ship_sector.ships if s.player_id != self.player.id):
+                    if ship_other.player_id in self.server.sessions:
+                        await self.server.sessions[ship_other.player_id].on_ship_exit_sector(
+                            sector=SectorPublic.from_inner(ship_sector), ship=ship_as_trader
+                        )
 
-            await self.broadcast_ship_enter_sector(ship_as_trader, target_public)
+                await self._broadcast_ship_enter_sector(ship_as_trader, target_public)
+
+            schedule_background_task(do_after())
+            return target_public
         except Exception:
             traceback.print_exc()
 
-    async def broadcast_player_enter_sector(self, player: Player):
-        await self.broadcast_ship_enter_sector(
-            TraderShipPublic(player.ship), SectorPublic(player.sector)
+    async def _broadcast_player_enter_sector(self, player: Player):
+        await self._broadcast_ship_enter_sector(
+            TraderShipPublic.from_inner(player.ship), SectorPublic.from_inner(player.sector)
         )
 
-    async def broadcast_ship_enter_sector(
+    async def _broadcast_ship_enter_sector(
         self, ship_as_trader: TraderShipPublic, target: SectorPublic
     ):
         for ship in (s for s in target.ships if s.trader.id != self.player.id):
@@ -233,23 +291,23 @@ class ShipMoves:
                     sector=target, ship=ship_as_trader
                 )
 
-    async def enter_port(self, port_id: int, **kwargs):
+    async def enter_port(self, port_id: int, **kwargs) -> None:
         port: Port = self.galaxy.ports[port_id]
         self.player.port = port
         await self.server.sessions[self.player.id].on_port_enter(
-            port=PortPublic(port), player=PlayerPublic(self.player)
+            port=PortPublic.from_inner(port), player=PlayerPublic.from_inner(self.player)
         )
 
     async def exit_port(self, port_id: int, **kwargs):
         port: Port = self.galaxy.ports[port_id]
         self.player.port = None
         await self.server.sessions[self.player.id].on_port_exit(
-            port=PortPublic(port), player=PlayerPublic(self.player)
+            port=PortPublic.from_inner(port), player=PlayerPublic.from_inner(self.player)
         )
 
     async def sell_to_port(
-        self, parent_id, port_id: int, commodity: CommodityType, amount: int, **kwargs
-    ):
+        self, port_id: int, commodity: CommodityType, amount: int, **kwargs
+    ) -> tuple[PlayerPublic, PortPublic] | None:
         ship = self.galaxy.ships[self.player.ship_id]
         port = self.galaxy.ports[port_id]
 
@@ -279,16 +337,15 @@ class ShipMoves:
         trading.amount -= amount
         ship.remove_from_holds(commodity, amount)
 
-        await self.events.reply(parent_id, PlayerPublic(self.player), PortPublic(port))
+        return PlayerPublic.from_inner(self.player), PortPublic.from_inner(port)
 
     async def buy_from_port(
         self,
-        parent_id: int,
         port_id: int,
         commodity: CommodityType,
         amount: int,
         **kwargs,
-    ):
+    ) -> tuple[PlayerPublic, PortPublic] | None:
         ship = self.galaxy.ships[self.player.ship_id]
         port = self.galaxy.ports[port_id]
 
@@ -322,4 +379,4 @@ class ShipMoves:
         trading.amount -= amount
         ship.add_to_holds(commodity, amount)
 
-        await self.events.reply(parent_id, PlayerPublic(self.player), PortPublic(port))
+        return PlayerPublic.from_inner(self.player), PortPublic.from_inner(port)

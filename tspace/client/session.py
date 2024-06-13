@@ -29,10 +29,10 @@ class Session:
         self.action_sink = None
 
         self.bus: Optional[EventBus] = None
-        self.prompt = self.start_no_prompt()
+        self.prompt = self._start_no_prompt()
         self.prompt_task: Optional[Task] = None
 
-    async def start(self, action_sink: Callable[[str], Awaitable[None]]):
+    async def _start(self, action_sink: Callable[[str], Awaitable[None]]):
         context = {
             k: v
             for k, v in inspect.getmembers(models, inspect.isclass)
@@ -54,20 +54,20 @@ class Session:
                 self.bus.remove_event_listener(self.prompt)
                 if waiting_prompt and waiting_prompt == self.prompt:
                     if e.next == PromptType.SECTOR:
-                        self.prompt = self.start_sector_prompt()
+                        self.prompt = self._start_sector_prompt()
                     elif e.next == PromptType.PORT:
-                        self.prompt = self.start_port_prompt()
+                        self.prompt = self._start_port_prompt()
                     elif e.next == PromptType.QUIT:
                         break
                     elif e.next == PromptType.NONE:
-                        self.prompt = self.start_no_prompt()
+                        self.prompt = self._start_no_prompt()
 
     async def on_game_enter(self, player: PlayerClient, config: GameConfigClient):
         log.info("on game enter!!!!!!!!!!!!!")
         self.game = Game(GameConfig(config))
         self.game.update_player(player)
 
-        prompt = self.start_sector_prompt()
+        prompt = self._start_sector_prompt()
         # prompt.print_sector(self.game.player.ship.sector)
         self.prompt = prompt
         self.prompt_task.cancel()
@@ -77,7 +77,7 @@ class Session:
         self.game.update_player(player)
         self.game.player.port_id = p.id
 
-        self.prompt = self.start_port_prompt()
+        self.prompt = self._start_port_prompt()
         self.prompt_task.cancel()
 
     async def on_port_exit(self, port: PortClient, player: PlayerClient):
@@ -85,33 +85,33 @@ class Session:
         self.game.update_player(player)
         self.game.player.port_id = None
 
-        self.prompt = self.start_sector_prompt()
+        self.prompt = self._start_sector_prompt()
         self.prompt_task.cancel()
 
     async def on_invalid_action(self, error: str):
         self.term.error(error)
-        self.prompt = self.start_sector_prompt()
+        self.prompt = self._start_sector_prompt()
         self.prompt_task.cancel()
 
-    def quit(self):
+    def _quit(self):
         self.prompt = None
         self.prompt_task.cancel()
 
-    def start_sector_prompt(self):
+    def _start_sector_prompt(self):
         actions = self.bus.wire_sending_methods(sector_prompt.Actions)()
         prompt = sector_prompt.Prompt(self.game, actions, term=self.term)
         prompt.print_sector()
         self.bus.append_event_listener(prompt)
         return prompt
 
-    def start_port_prompt(self):
+    def _start_port_prompt(self):
         actions = self.bus.wire_sending_methods(port_prompt.Actions)()
         prompt = port_prompt.Prompt(self.game, actions, self.term)
         events = port_prompt.Events(prompt)
         self.bus.append_event_listener(events)
         return prompt
 
-    def start_no_prompt(self):
+    def _start_no_prompt(self):
         prompt = InstantCmd(self.term)
 
         async def raise_quit(*_):
