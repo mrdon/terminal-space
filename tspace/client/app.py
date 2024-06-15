@@ -118,11 +118,14 @@ class TwApplication(Application):
 
         server_to_app = Queue()
 
-        in_cb = await server.join(
-            "Jim", lambda text: sync_to_async(server_to_app.put_nowait)(text)
+        async def cb(text):
+            server_to_app.put_nowait(text)
+
+        incoming_for_server = await server.join(
+            "Jim", sync_to_async(server_to_app.put_nowait)
         )
 
-        terminal_scene = TerminalScene(self, in_cb)
+        terminal_scene = TerminalScene(self, incoming_for_server)
         self.layout = terminal_scene.layout
 
         async def read_from_server():

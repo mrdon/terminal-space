@@ -98,14 +98,14 @@ class Session:
         self.prompt_task.cancel()
 
     def _start_sector_prompt(self):
-        actions = self.bus.wire_sending_methods(sector_prompt.Actions)()
+        actions = self.bus.wire_sending_methods(sector_prompt.Actions)
         prompt = sector_prompt.Prompt(self.game, actions, term=self.term)
         prompt.print_sector()
         self.bus.append_event_listener(prompt)
         return prompt
 
     def _start_port_prompt(self):
-        actions = self.bus.wire_sending_methods(port_prompt.Actions)()
+        actions = self.bus.wire_sending_methods(port_prompt.Actions)
         prompt = port_prompt.Prompt(self.game, actions, self.term)
         events = port_prompt.Events(prompt)
         self.bus.append_event_listener(events)

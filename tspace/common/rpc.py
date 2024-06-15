@@ -10,6 +10,7 @@ from pjrpc import AbstractRequest, AbstractResponse, Request
 from pjrpc.client import AbstractAsyncClient
 from pjrpc.server import AsyncDispatcher, MethodRegistry, Method
 from pydantic import BaseModel
+from pjrpc.server.validators import pydantic as validators
 
 from tspace.client.logging import log
 
@@ -44,19 +45,35 @@ class ClientAndServer(AbstractAsyncClient):
                     log.info("notify call")
                     return functools.partial(self._client.notify, attr)
 
-                return functools.partial(self._client.call, attr)
+                async def wrapped_call(*args, **kwargs):
+                    result = await self._client.call(attr, *args, **kwargs)
+                    orig_method = getattr(cls, attr)
+                    return_type = orig_method.__annotations__.get('return')
+                    if getattr(return_type, "parse_obj"):
+                        return return_type.parse_obj(result)
+                    return result
+
+                return wrapped_call
 
         return Proxy(self)
 
     def register_methods(self, obj: object) -> None:
         registry = MethodRegistry()
+        validator = validators.PydanticValidator()
         for name, fn in {
             name: fn
             for name, fn in inspect.getmembers(obj, inspect.ismethod)
             if not name.startswith("_")
         }.items():
-            log.error(f"callable: {fn}")
-            registry.add_methods(Method(lambda *args, **kwargs: fn(*args, **kwargs), name=name))
+
+            async def call(local_fn, *args: Any, **kwargs: Any) -> Any:
+                resp = await local_fn(*args, **kwargs)
+                if isinstance(resp, BaseModel):
+                    resp = resp.model_dump()
+                return resp
+
+            registry.add_methods(Method(validator.validate(functools.wraps(fn)(functools.partial(call, fn))),
+                                        name=name))
         self.dispatcher.add_methods(registry)
 
     def unregister_methods(self, target: object) -> None:
@@ -96,7 +113,8 @@ class ClientAndServer(AbstractAsyncClient):
 
         try:
             log.info("calling")
-            self.sender(request_text)
+
+            await self.sender(request_text)
         finally:
             log.info("Called")
 
@@ -108,9 +126,10 @@ class ClientAndServer(AbstractAsyncClient):
             await future
             log.info("future done")
             response_text = future.result()
-            response = response_class.from_json(
-                self.json_loader(response_text, cls=self.json_decoder), error_cls=self.error_cls,
-            )
+            if isinstance(response_text, str):
+                response_text = self.json_loader(response_text, cls=self.json_decoder)
+
+            response = response_class.from_json(response_text, error_cls=self.error_cls)
             validator(request, response)
 
         else:
@@ -130,11 +149,15 @@ class ClientAndServer(AbstractAsyncClient):
                 log.info(f"got result: {text}")
                 fut = self.futures.get(data["id"])
                 if fut:
-                    fut.set_result(data["result"])
+                    fut.set_result(data)
             else:
                 log.info(f"Got something else: {text}")
-                resp = await self.dispatcher.dispatch(text)
-                if resp:
-                    await self.sender(resp)
+                try:
+                    resp = await self.dispatcher.dispatch(text)
+                    if resp:
+                        await self.sender(resp)
+                except Exception as e:
+                    log.error(f"error: {e}", exc_info=True)
+                    raise
 
 

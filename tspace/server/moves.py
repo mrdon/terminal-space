@@ -100,18 +100,18 @@ class ShipPublic(BaseModel):
             id=ship.id,
             name=ship.name,
             holds_capacity=ship.holds_capacity,
-            holds={t.name: val for t, val in ship.holds.items()},
+            holds={t: val for t, val in ship.holds.items()},
             sector=SectorPublic.from_inner(sector),
             type=ship.ship_type.name,
         )
 
 
 class TradingCommodityPublic(BaseModel):
-    amount: int
-    capacity: int
+    amount: int | None
+    capacity: int | None
     buying: bool
     type: str
-    price: float
+    price: float | None
 
     @staticmethod
     def from_inner(commodity: TradingCommodity) -> TradingCommodityPublic:
@@ -298,7 +298,7 @@ class ShipMoves:
             port=PortPublic.from_inner(port), player=PlayerPublic.from_inner(self.player)
         )
 
-    async def exit_port(self, port_id: int, **kwargs):
+    async def exit_port(self, port_id: int):
         port: Port = self.galaxy.ports[port_id]
         self.player.port = None
         await self.server.sessions[self.player.id].on_port_exit(
@@ -306,7 +306,7 @@ class ShipMoves:
         )
 
     async def sell_to_port(
-        self, port_id: int, commodity: CommodityType, amount: int, **kwargs
+        self, port_id: int, commodity: CommodityType, amount: int
     ) -> tuple[PlayerPublic, PortPublic] | None:
         ship = self.galaxy.ships[self.player.ship_id]
         port = self.galaxy.ports[port_id]
@@ -344,7 +344,6 @@ class ShipMoves:
         port_id: int,
         commodity: CommodityType,
         amount: int,
-        **kwargs,
     ) -> tuple[PlayerPublic, PortPublic] | None:
         ship = self.galaxy.ships[self.player.ship_id]
         port = self.galaxy.ports[port_id]

@@ -37,13 +37,11 @@ class DamageType(enum.Enum):
 class PlanetClient(BaseModel):
     id: int
     name: str
-    regions: list
+    owner: TraderClient | None
     planet_type: str
     fuel_ore: int
     organics: int
     equipment: int
-    fighters: int
-    owner: TraderClient
 
 
 class Planet:
@@ -68,7 +66,6 @@ class Planet:
         self.fuel_ore = planet.fuel_ore
         self.organics = planet.organics
         self.equipment = planet.equipment
-        self.fighters = planet.fighters
 
     @property
     def owner(self):
@@ -78,9 +75,9 @@ class Planet:
 class TradingCommodityClient(BaseModel):
     type: str
     buying: bool
-    amount: int
-    capacity: int
-    price: int
+    amount: int | None
+    capacity: int | None
+    price: float | None
 
 
 class TradingCommodity:
@@ -283,7 +280,7 @@ class Ship:
 
 class PlayerClient(BaseModel):
     id: int
-    name: int
+    name: str
     credits: int
     ship: ShipClient
 

@@ -13,6 +13,7 @@ from typing import Sequence
 from typing import Tuple
 
 from tspace import common
+from tspace.client.logging import log
 from tspace.common.rpc import ClientAndServer
 
 
@@ -52,38 +53,10 @@ class EventBus:
         self._api.unregister_methods(target)
 
     async def __call__(self, data: str):
-        event = json.loads(data)
-        event_type = event["type"]
-        event_id = event.get("parent_id")
-
-        if event_id:
-            args = event["args"]
-            waited = self.wait_for_ids[event_id]
-            origin = (
-                waited.type.__origin__ if hasattr(waited.type, "__origin__") else None
-            )
-            if origin and issubclass(origin, tuple):
-                result = []
-                for t in waited.type.__args__:
-                    obj = common.decode(args.pop(0), t, context=self.context)
-                    result.append(obj)
-                obj = (*result,)
-            else:
-                obj = common.decode(args.pop(0), waited.type, context=self.context)
-            waited.future.set_result(obj)
-
-        else:
-            for target in self.targets:
-                try:
-                    func = getattr(target, event_type)
-                except AttributeError:
-                    continue
-
-                if func:
-                    kwargs = common.decode(event, func, context=self.context)
-                    return await sync_to_async(func)(**kwargs)
-
-            raise ValueError(f"No listeners found for {event_type} in {self.targets}")
+        try:
+            await self._api.on_incoming(data)
+        except Exception as e:
+            log.error(f"error dispatching {data}: {e}")
 
 
 def sync_to_async(func: Callable):
