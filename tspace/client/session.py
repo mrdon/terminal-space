@@ -13,9 +13,10 @@ from tspace.client.logging import log
 from tspace.client.models import GameConfig
 from tspace.client.prompts import PromptTransition
 from tspace.client.prompts import PromptType
-from tspace.client.stream import Terminal
+from tspace.client.terminal import Terminal
 from tspace.client.util import EventBus
 from tspace.common.models import GameConfigPublic, PlayerPublic, PortPublic
+from tspace.common.actions import SectorActions, PortActions
 
 
 class Session:
@@ -95,14 +96,14 @@ class Session:
         self.prompt_task.cancel()
 
     def _start_sector_prompt(self):
-        actions = self.bus.wire_sending_methods(sector_prompt.Actions)
+        actions = self.bus.wire_sending_methods(SectorActions)
         prompt = sector_prompt.Prompt(self.game, actions, term=self.term)
         prompt.print_sector()
         self.bus.append_event_listener(prompt)
         return prompt
 
     def _start_port_prompt(self):
-        actions = self.bus.wire_sending_methods(port_prompt.Actions)
+        actions = self.bus.wire_sending_methods(PortActions)
         prompt = port_prompt.Prompt(self.game, actions, self.term)
         events = port_prompt.Events(prompt)
         self.bus.append_event_listener(events)

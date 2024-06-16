@@ -12,30 +12,17 @@ from tspace.client.models import Ship
 from tspace.client.prompts import PromptTransition
 from tspace.client.prompts import PromptType
 from tspace.client.stream import SimpleMenuCmd
-from tspace.client.stream import Terminal
+from tspace.client.terminal import Terminal
 from tspace.client.stream import amount_prompt
 from tspace.client.stream import print_action
 from tspace.client.stream import yesno_prompt
 from tspace.common.models import PortPublic, PlayerPublic
-
-
-class Actions:
-    async def buy_from_port(
-        self, port_id: int, commodity: str, amount: int
-    ) -> tuple[PlayerPublic, PortPublic]:
-        pass
-
-    async def sell_to_port(
-        self, port_id: int, commodity: str, amount: int
-    ) -> tuple[PlayerPublic, PortPublic]:
-        pass
-
-    async def exit_port(self, port_id: int):
-        pass
+from tspace.common.actions import PortActions
+from tspace.common.events import ServerEvents
 
 
 class Prompt(SimpleMenuCmd):
-    def __init__(self, game: Game, actions: Actions, term: Terminal):
+    def __init__(self, game: Game, actions: PortActions, term: Terminal):
         super().__init__(term, "T", ("T", "Q"))
         self.out = term
         self.game = game
@@ -251,18 +238,10 @@ class Prompt(SimpleMenuCmd):
         self.out.nl(2)
 
 
-class Events:
+class Events(ServerEvents):
     def __init__(self, prompt: Prompt):
         self.prompt = prompt
 
     # noinspection PyMethodMayBeStatic
     def on_invalid_action(self, error: str):
         self.prompt.out.error(error)
-
-    def on_port_buy(self, id: int, player: PlayerPublic):
-        self.prompt.player.update(player)
-        # todo: when async, make this sync on event id
-
-    def on_port_sell(self, id: int, player: PlayerPublic):
-        self.prompt.player.update(player)
-        # todo: when async, make this sync on event id

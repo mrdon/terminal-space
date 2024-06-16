@@ -1,64 +1,35 @@
-from __future__ import annotations
-
 import traceback
 import typing
 
 from tspace.common.background import schedule_background_task
+from tspace.common.events import ServerEvents
 from tspace.common.models import (
-    GameConfigPublic,
     PlayerPublic,
     SectorPublic,
     TraderShipPublic,
     PortPublic,
 )
+from tspace.common.actions import SectorActions, PortActions
+from tspace.server.galaxy import Galaxy
 from tspace.server.models import CommodityType
 from tspace.server.models import Player
 from tspace.server.models import Port
 
-if typing.TYPE_CHECKING:
-    from tspace.server.server import Server
-    from tspace.server.models import Galaxy
-
 
 # @methods_to_json()
-class ServerEvents:
-    async def on_game_enter(self, player: PlayerPublic, config: GameConfigPublic):
-        pass
-
-    async def on_new_sector(self, sector: SectorPublic):
-        pass
-
-    async def on_ship_enter_sector(self, sector: SectorPublic, ship: TraderShipPublic):
-        pass
-
-    async def on_ship_exit_sector(self, sector: SectorPublic, ship: TraderShipPublic):
-        pass
-
-    async def on_invalid_action(self, error: str):
-        pass
-
-    async def on_port_enter(self, port: PortPublic, player: PlayerPublic):
-        pass
-
-    async def on_port_exit(self, port: PortPublic, player: PlayerPublic):
-        pass
-
-    async def on_port_buy(self, id: int, player: PlayerPublic):
-        pass
-
-    async def on_port_sell(self, id: int, player: PlayerPublic):
-        pass
-
-
-class ShipMoves:
+class ShipMoves(SectorActions, PortActions):
     def __init__(
-        self, server: Server, player: Player, galaxy: Galaxy, events: ServerEvents
+        self,
+        sessions: typing.Callable[[], dict[int, ServerEvents]],
+        player: Player,
+        galaxy: Galaxy,
+        events: ServerEvents,
     ):
         super().__init__()
         self.galaxy = galaxy
         self.player = player
         self.events = events
-        self.server = server
+        self.sessions = sessions
 
     async def move_trader(self, sector_id: int, **kwargs) -> SectorPublic | None:
         if sector_id not in self.galaxy.sectors:
@@ -91,10 +62,8 @@ class ShipMoves:
                 for ship_other in (
                     s for s in ship_sector.ships if s.player_id != self.player.id
                 ):
-                    if ship_other.player_id in self.server.sessions:
-                        await self.server.sessions[
-                            ship_other.player_id
-                        ].on_ship_exit_sector(
+                    if ship_other.player_id in self.sessions():
+                        await self.sessions()[ship_other.player_id].on_ship_exit_sector(
                             sector=ship_sector.to_public(), ship=ship_as_trader
                         )
 
@@ -114,24 +83,21 @@ class ShipMoves:
         self, ship_as_trader: TraderShipPublic, target: SectorPublic
     ):
         for ship in (s for s in target.ships if s.trader.id != self.player.id):
-            if ship.trader.id in self.server.sessions:
-                await self.server.sessions[ship.trader.id].on_ship_enter_sector(
+            if ship.trader.id in self.sessions():
+                await self.sessions()[ship.trader.id].on_ship_enter_sector(
                     sector=target, ship=ship_as_trader
                 )
 
-    async def enter_port(self, port_id: int, **kwargs) -> None:
+    async def enter_port(
+        self, port_id: int, **kwargs
+    ) -> tuple[PlayerPublic, PortPublic]:
         port: Port = self.galaxy.ports[port_id]
         self.player.port = port
-        await self.server.sessions[self.player.id].on_port_enter(
-            port=port.to_public(), player=self.player.to_public()
-        )
+        return self.player.to_public(), port.to_public()
 
-    async def exit_port(self, port_id: int):
-        port: Port = self.galaxy.ports[port_id]
+    async def exit_port(self, port_id: int) -> PlayerPublic:
         self.player.port = None
-        await self.server.sessions[self.player.id].on_port_exit(
-            port=port.to_public(), player=self.player.to_public()
-        )
+        return self.player.to_public()
 
     async def sell_to_port(
         self, port_id: int, commodity: CommodityType, amount: int

@@ -12,24 +12,18 @@ from tspace.client.stream import Fragment
 from tspace.client.stream import Item
 from tspace.client.stream import Row
 from tspace.client.stream import Table
-from tspace.client.stream import Terminal
+from tspace.client.terminal import Terminal
 from tspace.client.stream import print_action
 from tspace.client.stream import print_grid
 from tspace.client.ui.warp import WarpDialog
+from tspace.common.events import ServerEvents
 from tspace.common.models import TraderShipPublic, SectorPublic
-
-
-class Actions:
-    async def move_trader(self, sector_id: int) -> SectorPublic:
-        pass
-
-    async def enter_port(self, port_id: int):
-        pass
+from tspace.common.actions import SectorActions
 
 
 # noinspection PyMethodMayBeStatic,PyIncorrectDocstring
-class Prompt:
-    def __init__(self, game: Game, actions: Actions, term: Terminal):
+class Prompt(ServerEvents):
+    def __init__(self, game: Game, actions: SectorActions, term: Terminal):
         self.out = term
         self.player = game.player
         self.actions = actions
@@ -65,8 +59,14 @@ class Prompt:
     async def do_p(self, line):
         self.out.nl(2)
         self.out.print("Docking...", color="red", attrs=["blink"])
-        await self.actions.enter_port(port_id=self.player.sector.ports[0].id)
-        raise PromptTransition(PromptType.NONE)
+        player, port = await self.actions.enter_port(
+            port_id=self.player.sector.ports[0].id
+        )
+        p = self.game.update_port(port)
+        self.game.update_player(player)
+        self.game.player.port_id = p.id
+
+        raise PromptTransition(PromptType.PORT)
 
     def do_q(self, line):
         raise PromptTransition(PromptType.QUIT)

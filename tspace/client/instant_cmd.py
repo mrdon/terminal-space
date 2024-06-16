@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import re
 from inspect import isawaitable
 from typing import Any
@@ -10,8 +8,7 @@ from typing import TYPE_CHECKING
 
 from .util import sync_to_async
 
-if TYPE_CHECKING:
-    from .stream import Terminal
+from .terminal import Terminal
 
 
 class Matcher:

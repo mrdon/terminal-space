@@ -5,8 +5,6 @@ from typing import Dict
 from tspace.common.rpc import ClientAndServer
 from tspace.server.config import GameConfig
 from tspace.server.galaxy import Galaxy
-from tspace.server.moves import GameConfigPublic
-from tspace.server.moves import PlayerPublic
 from tspace.server.moves import ShipMoves, ServerEvents
 
 T = TypeVar("T")
@@ -28,7 +26,7 @@ class Server:
 
         events = api.build_client(ServerEvents)
 
-        moves = ShipMoves(self, player, self.game, events)
+        moves = ShipMoves(lambda: self.sessions, player, self.game, events)
         api.register_methods(moves)
 
         await events.on_game_enter(

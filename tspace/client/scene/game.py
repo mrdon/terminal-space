@@ -16,7 +16,7 @@ from prompt_toolkit.widgets import MenuItem
 
 from tspace.client.models import CommodityType, Sector
 from tspace.client.session import Session
-from tspace.client.stream import Terminal
+from tspace.client.terminal import Terminal
 from tspace.client.terminal_text_area import TerminalTextArea
 from tspace.client.ui.dynamic_label import DynamicLabel
 from tspace.client.ui.stat_frame import StatFrame, Stat
