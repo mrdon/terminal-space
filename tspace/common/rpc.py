@@ -14,18 +14,20 @@ from pjrpc.server.validators import pydantic as validators
 
 from tspace.client.logging import log
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class ClientAndServer(AbstractAsyncClient):
 
-    async def _request(self, request_text: str, is_notification: bool = False, **kwargs: Any) -> Optional[str]:
+    async def _request(
+        self, request_text: str, is_notification: bool = False, **kwargs: Any
+    ) -> Optional[str]:
         raise NotImplemented
 
     def __init__(self, sender: Callable[[str], Awaitable[None]]) -> None:
         super().__init__()
         self.sender = sender
-        self.futures: dict[str, Future[str]] = {}
+        self.futures: dict[str, Future[str | None]] = {}
         self.dispatcher = AsyncDispatcher()
 
     def build_client(self, cls: type[T]) -> T:
@@ -36,11 +38,11 @@ class ClientAndServer(AbstractAsyncClient):
             :param client: JSON-RPC client instance
             """
 
-            def __init__(self, client: 'BaseAbstractClient'):
+            def __init__(self, client: "BaseAbstractClient"):
                 self._client = client
 
             def __getattr__(self, attr: str) -> Callable[..., Any]:
-                notify = attr.startswith('on_')
+                notify = attr.startswith("on_")
                 if notify:
                     log.info("notify call")
                     return functools.partial(self._client.notify, attr)
@@ -48,10 +50,8 @@ class ClientAndServer(AbstractAsyncClient):
                 async def wrapped_call(*args, **kwargs):
                     result = await self._client.call(attr, *args, **kwargs)
                     orig_method = getattr(cls, attr)
-                    return_type = orig_method.__annotations__.get('return')
-                    if getattr(return_type, "parse_obj"):
-                        return return_type.parse_obj(result)
-                    return result
+                    return_type = orig_method.__annotations__.get("return")
+                    return _deserialize(return_type, result)
 
                 return wrapped_call
 
@@ -68,12 +68,16 @@ class ClientAndServer(AbstractAsyncClient):
 
             async def call(local_fn, *args: Any, **kwargs: Any) -> Any:
                 resp = await local_fn(*args, **kwargs)
-                if isinstance(resp, BaseModel):
-                    resp = resp.model_dump()
-                return resp
+                return _serialize(resp)
 
-            registry.add_methods(Method(validator.validate(functools.wraps(fn)(functools.partial(call, fn))),
-                                        name=name))
+            registry.add_methods(
+                Method(
+                    validator.validate(
+                        functools.wraps(fn)(functools.partial(call, fn))
+                    ),
+                    name=name,
+                )
+            )
         self.dispatcher.add_methods(registry)
 
     def unregister_methods(self, target: object) -> None:
@@ -83,25 +87,26 @@ class ClientAndServer(AbstractAsyncClient):
     @AbstractAsyncClient.retried
     @AbstractAsyncClient.traced
     async def _send(
-            self,
-            request: AbstractRequest,
-            response_class: Type[AbstractResponse],
-            validator: Callable[..., None],
-            _trace_ctx: SimpleNamespace = SimpleNamespace(),
-            **kwargs: Any,
+        self,
+        request: AbstractRequest,
+        response_class: Type[AbstractResponse],
+        validator: Callable[..., None],
+        _trace_ctx: SimpleNamespace = SimpleNamespace(),
+        **kwargs: Any,
     ) -> Optional[AbstractResponse]:
         # kwargs = {**self._request_args, **kwargs}
         assert isinstance(request, Request)
 
-        match request.params:
-            case list():
-                converted = [c.model_dump() if isinstance(c, BaseModel) else c for c in request.params]
-            case tuple():
-                converted = (c.model_dump() if isinstance(c, BaseModel) else c for c in request.params)
-            case dict():
-                converted = {key: c.model_dump() if isinstance(c, BaseModel) else c for key, c in request.params.items()}
-            case _:
-                raise NotImplementedError(f"unsupported request type: {type(request.params)}")
+        converted = _serialize(request.params)
+        # match request.params:
+        #     case list():
+        #         converted = [c.model_dump() if isinstance(c, BaseModel) else c for c in request.params]
+        #     case tuple():
+        #         converted = (c.model_dump() if isinstance(c, BaseModel) else c for c in request.params)
+        #     case dict():
+        #         converted = {key: c.model_dump() if isinstance(c, BaseModel) else c for key, c in request.params.items()}
+        #     case _:
+        #         raise NotImplementedError(f"unsupported request type: {type(request.params)}")
 
         serialized_request = Request(
             method=request.method,
@@ -150,6 +155,11 @@ class ClientAndServer(AbstractAsyncClient):
                 fut = self.futures.get(data["id"])
                 if fut:
                     fut.set_result(data)
+            elif "error" in data:
+                log.info(f"got error: {text}")
+                fut = self.futures.get(data["id"])
+                if fut:
+                    fut.set_result(data)
             else:
                 log.info(f"Got something else: {text}")
                 try:
@@ -161,3 +171,28 @@ class ClientAndServer(AbstractAsyncClient):
                     raise
 
 
+def _serialize(value: Any) -> Any:
+    if isinstance(value, BaseModel):
+        return value.model_dump()
+    if isinstance(value, tuple):
+        return [_serialize(r) for r in value]
+
+    if isinstance(value, dict):
+        return {key: _serialize(val) for key, val in value.items()}
+
+    return value
+
+
+def _deserialize(data_type: type, value: Any) -> Any:
+    try:
+        iter(data_type)
+        args = []
+        for arg_type, arg_value in zip(data_type.__args__, value):
+            args.append(_deserialize(arg_type, arg_value))
+        return args
+    except TypeError:
+        pass
+
+    if hasattr(data_type, "parse_obj"):
+        return data_type.parse_obj(value)
+    return value

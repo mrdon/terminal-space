@@ -1,40 +1,41 @@
 from __future__ import annotations
-from typing import Dict
-from typing import List
+
+from collections import defaultdict
 
 import networkx as nx
 
+from tspace.client.logging import log
 from tspace.client.models import GameConfig
 from tspace.client.models import Planet
-from tspace.client.models import PlanetClient
 from tspace.client.models import Player
-from tspace.client.models import PlayerClient
 from tspace.client.models import Port
-from tspace.client.models import PortClient
 from tspace.client.models import Sector
-from tspace.client.models import SectorClient
 from tspace.client.models import Ship
-from tspace.client.models import ShipClient
 from tspace.client.models import Trader
-from tspace.client.models import TraderClient
 from tspace.client.models import TraderShip
-from tspace.client.models import TraderShipClient
-from tspace.client.theme.tw2002 import Tw2002Theme
+from tspace.common.models import (
+    PlanetPublic,
+    PortPublic,
+    TraderPublic,
+    TraderShipPublic,
+    SectorPublic,
+    ShipPublic,
+)
 
 
 class Game:
     def __init__(self, config: GameConfig):
         self.config = config
-        self.sectors: List[Sector] = [None] * (config.sectors_count + 1)
-        self.trader_ships: Dict[int, TraderShip] = {}
-        self.ships: Dict[int, Ship] = {}
-        self.ports: Dict[int, Port] = {}
-        self.traders: Dict[int, Trader] = {}
-        self.planets: Dict[int, Planet] = {}
+        self.sectors: dict[int, Sector] = {}
+        self.trader_ships: dict[int, TraderShip] = {}
+        self.ships: dict[int, Ship] = {}
+        self.ports: dict[int, Port] = {}
+        self.traders: dict[int, Trader] = {}
+        self.planets: dict[int, Planet] = {}
         self.player: Player = None
 
     # noinspection PyUnresolvedReferences
-    def update_player(self, client: PlayerClient) -> Player:
+    def update_player(self, client: PlayerPublic) -> Player:
         if self.player:
             self.player.update(client)
         else:
@@ -45,7 +46,7 @@ class Game:
 
         return self.player
 
-    def update_ship(self, client: ShipClient) -> Ship:
+    def update_ship(self, client: ShipPublic) -> Ship:
         if client.id in self.ships:
             self.ships[client.id].update(client)
         else:
@@ -58,11 +59,12 @@ class Game:
 
         return self.ships[client.id]
 
-    def update_sector(self, client: SectorClient) -> Sector:
+    def update_sector(self, client: SectorPublic) -> Sector:
         sector = self.sectors[client.id] if client.id in self.sectors else None
         if sector:
             sector.update(client)
         else:
+            log.info(f"Adding sector : {client.id}")
             self.sectors[client.id] = Sector(self, client)
 
         if client.ports:
@@ -77,14 +79,15 @@ class Game:
             for planet in client.planets:
                 self.update_planet(planet)
 
-        for warp_id in (x for x in client.warps if not self.sectors[x]):
+        for warp_id in (x for x in client.warps if x not in self.sectors):
+            log.info(f"Adding warp sector : {warp_id}")
             self.sectors[warp_id] = Sector(
-                self, SectorClient(id=warp_id, warps=[], ports=[], ships=[], planets=[])
+                self, SectorPublic(id=warp_id, warps=[], ports=[], ships=[], planets=[])
             )
 
         return self.sectors[client.id]
 
-    def update_trader_ship(self, client: TraderShipClient) -> TraderShip:
+    def update_trader_ship(self, client: TraderShipPublic) -> TraderShip:
         if client.id in self.trader_ships:
             self.trader_ships[client.id].update(client)
         else:
@@ -95,7 +98,7 @@ class Game:
 
         return self.trader_ships[client.id]
 
-    def update_port(self, client: PortClient) -> Port:
+    def update_port(self, client: PortPublic) -> Port:
         if client.id in self.ports:
             self.ports[client.id].update(client)
         else:
@@ -103,7 +106,7 @@ class Game:
 
         return self.ports[client.id]
 
-    def update_trader(self, client: TraderClient) -> Trader:
+    def update_trader(self, client: TraderPublic) -> Trader:
         if client.id in self.traders:
             self.traders[client.id].update(client)
         else:
@@ -111,7 +114,7 @@ class Game:
 
         return self.traders[client.id]
 
-    def update_planet(self, client: PlanetClient) -> Planet:
+    def update_planet(self, client: PlanetPublic) -> Planet:
         if client.id in self.planets:
             self.planets[client.id].update(client)
         else:
@@ -119,15 +122,15 @@ class Game:
 
         return self.planets[client.id]
 
-    def plot_course(self, from_id: int, to_id: int) -> List[Sector]:
+    def plot_course(self, from_id: int, to_id: int) -> list[Sector]:
         g = self._gen_graph()
-        steps: List[int] = nx.shortest_path(g, from_id, to_id)
+        steps: list[int] = nx.shortest_path(g, from_id, to_id)
         return [self.sectors[x] for x in steps]
 
     def _gen_graph(self) -> nx.Graph:
         g = nx.Graph(directed=True)
 
-        for sector in (sector for sector in self.sectors if sector):
+        for sector in (sector for sector in self.sectors.values() if sector):
             g.add_node(sector.id)
             for warp in sector.warps:
                 g.add_edge(sector.id, warp)

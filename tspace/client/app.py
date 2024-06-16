@@ -118,9 +118,6 @@ class TwApplication(Application):
 
         server_to_app = Queue()
 
-        async def cb(text):
-            server_to_app.put_nowait(text)
-
         incoming_for_server = await server.join(
             "Jim", sync_to_async(server_to_app.put_nowait)
         )

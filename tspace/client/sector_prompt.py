@@ -1,18 +1,11 @@
 import asyncio
+import sys
 from typing import List
-
-from prompt_toolkit.application import get_app
-from prompt_toolkit.data_structures import Point
-from prompt_toolkit.layout import Window
-from terminaltexteffects.effects.effect_beams import Beams
-from terminaltexteffects.effects.effect_slide import Slide
 
 from tspace.client.game import Game
 from tspace.client.instant_cmd import InstantCmd
 from tspace.client.instant_cmd import InvalidSelectionError
 from tspace.client.models import Sector
-from tspace.client.models import SectorClient
-from tspace.client.models import TraderShipClient
 from tspace.client.prompts import PromptTransition
 from tspace.client.prompts import PromptType
 from tspace.client.stream import Fragment
@@ -23,10 +16,11 @@ from tspace.client.stream import Terminal
 from tspace.client.stream import print_action
 from tspace.client.stream import print_grid
 from tspace.client.ui.warp import WarpDialog
+from tspace.common.models import TraderShipPublic, SectorPublic
 
 
 class Actions:
-    async def move_trader(self, sector_id: int) -> SectorClient:
+    async def move_trader(self, sector_id: int) -> SectorPublic:
         pass
 
     async def enter_port(self, port_id: int):
@@ -47,16 +41,14 @@ class Prompt:
             "p", validator=lambda _: len(self.player.sector.ports) > 0
         )(self.do_p)
         self.instant_cmd.literal("q")(self.do_q)
-        self.instant_cmd.regex(
-            "[0-9]+", max_length=len(str(game.config.sectors_count))
-        )(self.do_move)
+        self.instant_cmd.regex("[0-9]+", max_length=sys.maxsize)(self.do_move)
 
-    async def on_ship_enter_sector(self, sector: SectorClient, ship: TraderShipClient):
+    async def on_ship_enter_sector(self, sector: SectorPublic, ship: TraderShipPublic):
         self.game.update_sector(sector)
         if self.player.ship.sector.id == sector.id:
             self.print_ship_enter_sector(ship)
 
-    async def on_ship_exit_sector(self, sector: SectorClient, ship: TraderShipClient):
+    async def on_ship_exit_sector(self, sector: SectorPublic, ship: TraderShipPublic):
         self.game.update_sector(sector)
         if self.player.ship.sector.id == sector.id:
             self.print_ship_exit_sector(ship)
@@ -136,7 +128,7 @@ class Prompt:
             self.game.player.visited.add(s.id)
             self.print_sector(s)
 
-        elif self.game.sectors[target_id]:
+        elif self.game.sectors.get(target_id):
             self.out.write_line(
                 ("magenta", "Auto-warping to Sector "), ("yellow", str(target_id))
             )

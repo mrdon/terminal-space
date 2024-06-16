@@ -3,8 +3,7 @@ import inspect
 from asyncio import CancelledError
 from asyncio import Future
 from asyncio import Task
-from typing import Awaitable
-from typing import Callable
+from typing import Callable, Awaitable
 from typing import Optional
 
 from tspace.client import models, sector_prompt, port_prompt
@@ -12,13 +11,11 @@ from tspace.client.game import Game
 from tspace.client.instant_cmd import InstantCmd
 from tspace.client.logging import log
 from tspace.client.models import GameConfig
-from tspace.client.models import GameConfigClient
-from tspace.client.models import PlayerClient
-from tspace.client.models import PortClient
 from tspace.client.prompts import PromptTransition
 from tspace.client.prompts import PromptType
 from tspace.client.stream import Terminal
 from tspace.client.util import EventBus
+from tspace.common.models import GameConfigPublic, PlayerPublic, PortPublic
 
 
 class Session:
@@ -62,7 +59,7 @@ class Session:
                     elif e.next == PromptType.NONE:
                         self.prompt = self._start_no_prompt()
 
-    async def on_game_enter(self, player: PlayerClient, config: GameConfigClient):
+    async def on_game_enter(self, player: PlayerPublic, config: GameConfigPublic):
         log.info("on game enter!!!!!!!!!!!!!")
         self.game = Game(GameConfig(config))
         self.game.update_player(player)
@@ -72,7 +69,7 @@ class Session:
         self.prompt = prompt
         self.prompt_task.cancel()
 
-    async def on_port_enter(self, port: PortClient, player: PlayerClient):
+    async def on_port_enter(self, port: PortPublic, player: PlayerPublic):
         p = self.game.update_port(port)
         self.game.update_player(player)
         self.game.player.port_id = p.id
@@ -80,7 +77,7 @@ class Session:
         self.prompt = self._start_port_prompt()
         self.prompt_task.cancel()
 
-    async def on_port_exit(self, port: PortClient, player: PlayerClient):
+    async def on_port_exit(self, port: PortPublic, player: PlayerPublic):
         self.game.update_port(port)
         self.game.update_player(player)
         self.game.player.port_id = None

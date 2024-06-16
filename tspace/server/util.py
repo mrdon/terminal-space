@@ -96,5 +96,3 @@ class AutoIdDict(dict):
         self[key] = val
         val.id = key
         return val
-
-

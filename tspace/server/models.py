@@ -7,6 +7,18 @@ from typing import Optional, TYPE_CHECKING
 
 from pydantic import BaseModel
 
+from tspace.common.models import (
+    PlayerPublic,
+    TraderPublic,
+    ShipPublic,
+    TradingCommodityPublic,
+    PortPublic,
+    SectorPublic,
+    PlanetPublic,
+    TraderShipPublic,
+    CommodityType,
+)
+
 if TYPE_CHECKING:
     from tspace.server.galaxy import Galaxy
 
@@ -31,21 +43,33 @@ class Planet:
         self.equipment = 0
         self.fighters = 0
 
+    def to_public(self) -> PlanetPublic:
+        return PlanetPublic(
+            id=self.id,
+            name=self.name,
+            owner=self.owner.to_trader() if self.owner else None,
+            planet_type=self.planet_type,
+            fuel_ore=self.fuel_ore,
+            organics=self.organics,
+            equipment=self.equipment,
+        )
+
     @property
     def owner(self):
         return self.game.players[self.owner_id] if self.owner_id else None
 
 
-class CommodityType(enum.Enum):
-    fuel_ore = ("Fuel Ore", 1, 1.5)
-    organics = ("Organics", 2, 3)
-    equipment = ("Equipment", 4, 6)
+@dataclass
+class CommodityCost:
+    sell_cost: int
+    buy_offer: float
 
-    # noinspection PyInitNewSignature
-    def __init__(self, title: str, sell_cost: int, buy_cost: float):
-        self.title = title
-        self.sell_cost = sell_cost
-        self.buy_offer = buy_cost
+
+COMMODITY_COSTS = {
+    CommodityType.fuel_ore: CommodityCost(1, 1.5),
+    CommodityType.organics: CommodityCost(2, 3),
+    CommodityType.equipment: CommodityCost(4, 6),
+}
 
 
 class TradingCommodity:
@@ -55,18 +79,26 @@ class TradingCommodity:
         self.buying = buying
         self.capacity = amount
 
+    def to_public(self) -> TradingCommodityPublic:
+        return TradingCommodityPublic(
+            amount=self.amount,
+            capacity=self.capacity,
+            buying=self.buying,
+            type=self.type.name,
+            price=self.price,
+        )
+
     @property
     def price(self):
+        cost = COMMODITY_COSTS[self.type]
         if self.buying:
             return round(
-                self.type.buy_offer
-                + ((self.amount / self.capacity) * self.type.buy_offer) / 2,
+                cost.buy_offer + ((self.amount / self.capacity) * cost.buy_offer) / 2,
                 2,
             )
         else:
             return round(
-                self.type.sell_cost
-                - ((self.amount / self.capacity) * self.type.sell_cost) / 2,
+                cost.sell_cost - ((self.amount / self.capacity) * cost.sell_cost) / 2,
                 2,
             )
 
@@ -104,6 +136,14 @@ class Port:
         self.name = name
         self.sector_id = sector_id
 
+    def to_public(self) -> PortPublic:
+        return PortPublic(
+            id=self.id,
+            name=self.name,
+            sector_id=self.sector_id,
+            commodities=[c.to_public() for c in self.commodities],
+        )
+
     def commodity(self, type: CommodityType):
         return next(c for c in self.commodities if c.type == type)
 
@@ -119,6 +159,23 @@ class Sector:
         self.ship_ids = []
         self.coords = coords
         self.port_ids = []
+
+    def to_public(self) -> SectorPublic:
+
+        ports = [port.to_public() for port in self.ports]
+        for port in ports:
+            for c in port.commodities:
+                c.amount = None
+                c.capacity = None
+                c.price = None
+
+        return SectorPublic(
+            id=self.id,
+            warps=self.warps,
+            ports=ports,
+            ships=[ship.to_trader() for ship in self.ships],
+            planets=[planet.to_public() for planet in self.planets],
+        )
 
     def can_warp(self, sector_id):
         return sector_id in self.warps
@@ -151,6 +208,22 @@ class Player:
         self.ship_id = None
         self.port_id = None
         self.sector_id = None
+
+    def to_public(self):
+        return PlayerPublic(
+            id=self.id,
+            name=self.name,
+            ship=self.ship.to_public(),
+            credits=self.credits,
+            sector=self.sector.to_public(),
+            port=None if not self.port else self.port.to_public(),
+        )
+
+    def to_trader(self) -> TraderPublic:
+        return TraderPublic(
+            id=self.id,
+            name=self.name,
+        )
 
     @property
     def sector(self):
@@ -185,18 +258,6 @@ class Battle:
         self.game = game
         self.sector_id = sector_id
         self.player_ids = player_ids
-
-
-class ShipType(BaseModel):
-    name: str
-    cost: int
-    holds_initial: int
-    holds_max: int
-    warp_cost: int
-    weapons_max: int
-    countermeasures_max: int
-    has_shield_slot: bool
-    has_scanner_slot: bool
 
 
 class DamageType(enum.Enum):
@@ -247,6 +308,28 @@ class Ship:
         self.game = game
         self.weapon_ids: List[int] = []
         self.countermeasure_ids: List[int] = []
+
+    def to_public(self) -> ShipPublic:
+        return ShipPublic(
+            id=self.id,
+            name=self.name,
+            holds_capacity=self.holds_capacity,
+            holds={t: val for t, val in self.holds.items()},
+            sector=(
+                self.game.sectors[self.sector_id].to_public()
+                if self.sector_id
+                else None
+            ),
+            type=self.ship_type.name,
+        )
+
+    def to_trader(self) -> TraderShipPublic:
+        return TraderShipPublic(
+            id=self.id,
+            name=self.name,
+            type=self.ship_type,
+            trader=self.player.to_trader(),
+        )
 
     def move_sector(self, sector_id):
         self.sector_id = sector_id

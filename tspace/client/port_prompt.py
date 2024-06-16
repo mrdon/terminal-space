@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Tuple
 
 from colorclass import Color
@@ -9,9 +7,7 @@ from tabulate import TableFormat
 from tabulate import tabulate
 
 from tspace.client.game import Game
-from tspace.client.models import PlayerClient
 from tspace.client.models import Port
-from tspace.client.models import PortClient
 from tspace.client.models import Ship
 from tspace.client.prompts import PromptTransition
 from tspace.client.prompts import PromptType
@@ -20,17 +16,18 @@ from tspace.client.stream import Terminal
 from tspace.client.stream import amount_prompt
 from tspace.client.stream import print_action
 from tspace.client.stream import yesno_prompt
+from tspace.common.models import PortPublic, PlayerPublic
 
 
 class Actions:
     async def buy_from_port(
         self, port_id: int, commodity: str, amount: int
-    ) -> Tuple[PlayerClient, PortClient]:
+    ) -> tuple[PlayerPublic, PortPublic]:
         pass
 
     async def sell_to_port(
         self, port_id: int, commodity: str, amount: int
-    ) -> Tuple[PlayerClient, PortClient]:
+    ) -> tuple[PlayerPublic, PortPublic]:
         pass
 
     async def exit_port(self, port_id: int):
@@ -214,7 +211,7 @@ class Prompt(SimpleMenuCmd):
                         ):
                             player_client, port_client = (
                                 await self.actions.buy_from_port(
-                                    port_id=port.id, commodity=c.type, amount=value
+                                    port_id=port.id, commodity=c.type.name, amount=value
                                 )
                             )
                             self.game.update_player(player_client)
@@ -262,10 +259,10 @@ class Events:
     def on_invalid_action(self, error: str):
         self.prompt.out.error(error)
 
-    def on_port_buy(self, id: int, player: PlayerClient):
+    def on_port_buy(self, id: int, player: PlayerPublic):
         self.prompt.player.update(player)
         # todo: when async, make this sync on event id
 
-    def on_port_sell(self, id: int, player: PlayerClient):
+    def on_port_sell(self, id: int, player: PlayerPublic):
         self.prompt.player.update(player)
         # todo: when async, make this sync on event id

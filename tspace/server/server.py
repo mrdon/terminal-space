@@ -9,7 +9,7 @@ from tspace.server.moves import GameConfigPublic
 from tspace.server.moves import PlayerPublic
 from tspace.server.moves import ShipMoves, ServerEvents
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class Server:
@@ -32,8 +32,8 @@ class Server:
         api.register_methods(moves)
 
         await events.on_game_enter(
-            player=PlayerPublic.from_inner(player),
-            config=GameConfigPublic.from_inner(self.config, len(self.game.sectors)),
+            player=player.to_public(),
+            config=self.config.to_public(),
         )
         self.sessions[player.id] = events
         await moves._broadcast_player_enter_sector(player)

@@ -1,5 +1,7 @@
 from typing import Any, Optional
 
+from tspace.common.models import GameConfigPublic
+
 
 class PortConfig:
     def __init__(self, density: int = 40):
@@ -23,6 +25,7 @@ class GameConfig:
         player: PlayerConfig = PlayerConfig(),
         debug_network: bool = False,
         warp_density: int = 3.5,
+        sectors_count: int = 0,
     ):
         self.player = player
         self.warp_density = warp_density
@@ -32,3 +35,12 @@ class GameConfig:
         self.diameter = diameter
         self.name = name
         self.id = id
+        self.sectors_count = sectors_count
+
+    def to_public(self) -> GameConfigPublic:
+        return GameConfigPublic(
+            id=self.id,
+            name=self.name,
+            diameter=self.diameter,
+            sectors_count=self.sectors_count,
+        )

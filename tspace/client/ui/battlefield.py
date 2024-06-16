@@ -39,8 +39,6 @@ class Space:
         return hash((self.x, self.y))
 
 
-
-
 class Battlefield(UIControl):
     def __init__(self, stacks: list[Stack], sector: Sector, max_x: int, max_y: int):
         self.stacks = stacks
@@ -68,7 +66,7 @@ class Battlefield(UIControl):
                 self.grid[start_y][x_pos].stack = stack
                 start_y += 1
             x_pos = self.grid_width - 1
-            
+
         self.key_bindings = KeyBindings()
         self.key_bindings.add("q")(lambda *_: exit(0))
         self.show_cursor = False
@@ -97,7 +95,13 @@ class Battlefield(UIControl):
                 for x_mod, y_mod in mod_list:
                     x = space.x + x_mod
                     y = space.y + y_mod
-                    if x < 0 or y < 0 or x >= self.grid_width or y >= self.grid_height or (x_mod == 0 and y_mod == 0):
+                    if (
+                        x < 0
+                        or y < 0
+                        or x >= self.grid_width
+                        or y >= self.grid_height
+                        or (x_mod == 0 and y_mod == 0)
+                    ):
                         continue
 
                     edge_space = self.grid[y][x]
@@ -116,7 +120,7 @@ class Battlefield(UIControl):
                 if self._last_selected:
                     if not self._last_selected.stack or not space.empty:
                         return None
-                    
+
                     self._mouse_enabled = False
 
                     async def move():
@@ -243,7 +247,12 @@ def main():
     )
     layout = Layout(grid.window)
 
-    app = Application(layout=layout, full_screen=True, key_bindings=grid.key_bindings, refresh_interval=1)
+    app = Application(
+        layout=layout,
+        full_screen=True,
+        key_bindings=grid.key_bindings,
+        refresh_interval=1,
+    )
     print("running")
     try:
         app.output.enable_mouse_support()

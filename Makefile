@@ -11,7 +11,7 @@ clean:
 
 format: ## Format the imports and code
 	echo Formatting code
-	pdm run black -l 88 -t py37 tspace
+	pdm run black -l 88 tspace
 
 pyenv: ## Create a virtualenv
 	pdm install -d

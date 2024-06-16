@@ -1,51 +1,35 @@
 from __future__ import annotations
 
-import enum
 import typing
 from collections import defaultdict
-from dataclasses import dataclass
-
-from pydantic import BaseModel
 
 from tspace.client.stream import Fragment
+from tspace.common.models import (
+    CommodityType,
+    GameConfigPublic,
+    PlanetPublic,
+    TraderShipPublic,
+    PortPublic,
+    SectorPublic,
+    ShipPublic,
+    PlayerPublic,
+    TradingCommodityPublic,
+    TraderPublic,
+)
 
 if typing.TYPE_CHECKING:
     from tspace.client.game import Game
 
 
-class GameConfigClient(BaseModel):
-    id: int
-    name: str
-    diameter: int
-    sectors_count: int
-
-
 class GameConfig:
-    def __init__(self, client: GameConfigClient):
+    def __init__(self, client: GameConfigPublic):
         self.id = client.id
         self.name = client.name
         self.diameter = client.diameter
-        self.sectors_count = client.sectors_count
-
-
-class DamageType(enum.Enum):
-    ENERGY = "Energy"
-    KINETIC = "Kinetic"
-    EXPLOSIVE = "Explosive"
-
-
-class PlanetClient(BaseModel):
-    id: int
-    name: str
-    owner: TraderClient | None
-    planet_type: str
-    fuel_ore: int
-    organics: int
-    equipment: int
 
 
 class Planet:
-    def __init__(self, game: Game, planet: PlanetClient):
+    def __init__(self, game: Game, planet: PlanetPublic):
         self._game = game
         self.id: int = planet.id
         self.name: str = ""
@@ -58,7 +42,7 @@ class Planet:
         self.fighters: int = 0
         self.update(planet)
 
-    def update(self, planet: PlanetClient):
+    def update(self, planet: PlanetPublic):
         self.name = planet.name
         self.owner_id = planet.owner.id if planet.owner else None
         self.planet_type = planet.planet_type
@@ -72,16 +56,8 @@ class Planet:
         return self._game.traders[self.owner_id] if self.owner_id else None
 
 
-class TradingCommodityClient(BaseModel):
-    type: str
-    buying: bool
-    amount: int | None
-    capacity: int | None
-    price: float | None
-
-
 class TradingCommodity:
-    def __init__(self, client: TradingCommodityClient):
+    def __init__(self, client: TradingCommodityPublic):
         self.type = CommodityType[client.type]
         self.price: int = None
         self.capacity: int = None
@@ -89,26 +65,13 @@ class TradingCommodity:
         self.buying: bool = False
         self.update(client)
 
-    def update(self, client: TradingCommodityClient):
+    def update(self, client: TradingCommodityPublic):
         self.price = client.price if client.price is not None else self.price
         self.capacity = (
             client.capacity if client.capacity is not None else self.capacity
         )
         self.amount = client.amount if client.amount is not None else self.amount
         self.buying = client.buying
-
-
-class CommodityType(enum.Enum):
-    fuel_ore = "Fuel Ore"
-    organics = "Organics"
-    equipment = "Equipment"
-
-
-class PortClient(BaseModel):
-    id: int
-    sector_id: int
-    name: str
-    commodities: list[TradingCommodityClient]
 
 
 class Port:
@@ -123,7 +86,7 @@ class Port:
         "BBB": 8,
     }
 
-    def __init__(self, game: Game, client: PortClient):
+    def __init__(self, game: Game, client: PortPublic):
         self._game = game
         self.id = client.id
         self.sector_id = client.sector_id
@@ -131,7 +94,7 @@ class Port:
         self.commodities: dict[CommodityType, TradingCommodity] = {}
         self.update(client)
 
-    def update(self, client: PortClient):
+    def update(self, client: PortPublic):
         self.name = client.name
 
         if client.commodities:
@@ -144,7 +107,7 @@ class Port:
 
     @property
     def sector(self):
-        return self._game.sectors[self.sector_id]
+        return self._game.sectors.get(self.sector_id)
 
     @property
     def class_name(self):
@@ -168,35 +131,24 @@ class Port:
         return self.CLASSES[self.class_name]
 
 
-class TraderClient(BaseModel):
-    id: int
-    name: str
-
-
 class Trader:
-    def __init__(self, game: Game, client: TraderClient):
+    def __init__(self, game: Game, client: TraderPublic):
         self._game = game
         self.id = client.id
         self.name: str = ""
 
-    def update(self, client: TraderClient):
+    def update(self, client: TraderPublic):
         self.name = client.name
 
 
-class TraderShipClient(BaseModel):
-    id: int
-    name: str
-    trader: TraderClient
-
-
 class TraderShip:
-    def __init__(self, game: Game, client: TraderShipClient):
+    def __init__(self, game: Game, client: TraderShipPublic):
         self.id = client.id
         self._game = game
         self.name: str = ""
         self.trader_id: int = 0
 
-    def update(self, client: TraderShipClient):
+    def update(self, client: TraderShipPublic):
         self.name = client.name
         self.trader_id = client.trader.id
 
@@ -205,21 +157,13 @@ class TraderShip:
         return self._game.traders.get(self.trader_id)
 
 
-class SectorClient(BaseModel):
-    id: int
-    warps: list[int]
-    ports: list[PortClient]
-    ships: list[TraderShipClient]
-    planets: list[PlanetClient]
-
-
 class Sector:
-    def __init__(self, game: Game, client: SectorClient):
+    def __init__(self, game: Game, client: SectorPublic):
         self.id = client.id
         self._game = game
         self.update(client)
 
-    def update(self, client: SectorClient):
+    def update(self, client: SectorPublic):
         self.warps = client.warps
 
         self.port_ids = [port.id for port in client.ports]
@@ -241,17 +185,8 @@ class Sector:
         return [self._game.planets.get(id) for id in self.planet_ids]
 
 
-class ShipClient(BaseModel):
-    id: int
-    name: str
-    type: str
-    holds_capacity: int
-    holds: dict[str, int]
-    sector: SectorClient
-
-
 class Ship:
-    def __init__(self, game: Game, client: ShipClient):
+    def __init__(self, game: Game, client: ShipPublic):
         self._game = game
         self.id = client.id
         self.name: str = ""
@@ -261,32 +196,25 @@ class Ship:
         self.holds: dict[CommodityType, int] = defaultdict(lambda: 0)
         self.update(client)
 
-    def update(self, client: ShipClient):
+    def update(self, client: ShipPublic):
         self.name = client.name
         self.type = client.type
         self.holds_capacity = client.holds_capacity
 
-        self.holds.update({CommodityType[k]: v for k, v in client.holds.items()})
+        self.holds.update(client.holds)
         self.sector_id = client.sector.id if client.sector else None
 
     @property
     def sector(self) -> Sector | None:
-        return None if not self.sector_id else self._game.sectors[self.sector_id]
+        return self._game.sectors.get(self.sector_id)
 
     @property
     def holds_free(self):
         return self.holds_capacity - sum(self.holds.values())
 
 
-class PlayerClient(BaseModel):
-    id: int
-    name: str
-    credits: int
-    ship: ShipClient
-
-
 class Player:
-    def __init__(self, game: Game, client: PlayerClient):
+    def __init__(self, game: Game, client: PlayerPublic):
         self._game = game
         self.id = client.id
         self.visited: set[int] = set()
@@ -296,7 +224,7 @@ class Player:
         self.port_id: int = 0
         self.update(client)
 
-    def update(self, client: PlayerClient):
+    def update(self, client: PlayerPublic):
         self.credits = client.credits
         self.name = client.name
         self.ship_id = client.ship.id if client.ship else None

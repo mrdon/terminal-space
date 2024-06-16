@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from tspace.common.models import ShipType
 from tspace.server.builders import weapons, countermeasures
 from tspace.server.util import AutoIncrementId
 
-from tspace.server.models import ShipType, Ship, DamageType
+from tspace.server.models import Ship, DamageType
 
 if TYPE_CHECKING:
     from tspace.server.models import Galaxy
