@@ -4,11 +4,11 @@ from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Optional
-from typing import TYPE_CHECKING
 
 from .util import sync_to_async
 
 from .terminal import Terminal
+from ..common.errors import TSpaceError
 
 
 class Matcher:
@@ -129,7 +129,10 @@ class InstantCmd:
 
                 if should_write:
                     self.out.write_line(("", char))
-                return await sync_to_async(func)(line)
+                try:
+                    return await sync_to_async(func)(line)
+                except TSpaceError as e:
+                    self.out.error(e.message)
             elif not len(matches):
                 buffer.pop()
             elif should_write:

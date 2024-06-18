@@ -19,6 +19,3 @@ class ServerEvents:
         self, sector: SectorPublic, ship: TraderShipPublic
     ) -> None:
         pass
-
-    async def on_invalid_action(self, error: str) -> None:
-        pass

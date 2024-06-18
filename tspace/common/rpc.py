@@ -8,11 +8,13 @@ from typing import Callable
 
 from pjrpc import AbstractRequest, AbstractResponse, Request
 from pjrpc.client import AbstractAsyncClient
+from pjrpc.common.exceptions import JsonRpcError
 from pjrpc.server import AsyncDispatcher, MethodRegistry, Method
 from pydantic import BaseModel
 from pjrpc.server.validators import pydantic as validators
 
 from tspace.client.logging import log
+from tspace.common.errors import from_code
 
 T = TypeVar("T")
 
@@ -28,7 +30,14 @@ class ClientAndServer(AbstractAsyncClient):
         super().__init__()
         self.sender = sender
         self.futures: dict[str, Future[str | None]] = {}
-        self.dispatcher = AsyncDispatcher()
+        self.dispatcher = AsyncDispatcher(error_handlers={None: [self.error_handler]})
+
+    async def error_handler(
+        self, request: Request, context: Optional[Any], error: JsonRpcError
+    ) -> JsonRpcError:
+
+        cause = error.__cause__
+        return JsonRpcError(code=cause.code, message=cause.message, data=cause.data)
 
     def build_client(self, cls: type[T]) -> T:
         class Proxy:
@@ -48,7 +57,10 @@ class ClientAndServer(AbstractAsyncClient):
                     return functools.partial(self._client.notify, attr)
 
                 async def wrapped_call(*args, **kwargs):
-                    result = await self._client.call(attr, *args, **kwargs)
+                    try:
+                        result = await self._client.call(attr, *args, **kwargs)
+                    except JsonRpcError as e:
+                        raise from_code(e.code, e.message)
                     orig_method = getattr(cls, attr)
                     return_type = orig_method.__annotations__.get("return")
                     return _deserialize(return_type, result)

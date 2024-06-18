@@ -109,17 +109,21 @@ class Prompt(SimpleMenuCmd):
                         ("magenta", "in your holds. "),
                     )
                     self.out.nl()
-                    value = await amount_prompt(
-                        stream=self.out,
-                        prompt=(
-                            ("magenta", "How many holds of "),
-                            ("cyan", c.type.value),
-                            ("magenta", " do you want to sell"),
-                        ),
-                        default=amount,
-                        min=0,
-                        max=amount,
-                    )
+                    try:
+                        value = await amount_prompt(
+                            stream=self.out,
+                            prompt=(
+                                ("magenta", "How many holds of "),
+                                ("cyan", c.type.value),
+                                ("magenta", " do you want to sell"),
+                            ),
+                            default=amount,
+                            min=0,
+                            max=amount,
+                        )
+                    except ValueError as e:
+                        self.out.error(str(e))
+                        continue
                     if value:
                         self.out.nl()
                         self.out.write_line(
@@ -168,17 +172,22 @@ class Prompt(SimpleMenuCmd):
                         ("magenta", " in your holds."),
                     )
                     self.out.nl()
-                    value = await amount_prompt(
-                        stream=self.out,
-                        prompt=[
-                            ("magenta", "How many holds of "),
-                            ("cyan", c.type.value),
-                            ("magenta", " do you want to buy"),
-                        ],
-                        default=amount,
-                        min=0,
-                        max=amount,
-                    )
+                    try:
+                        value = await amount_prompt(
+                            stream=self.out,
+                            prompt=[
+                                ("magenta", "How many holds of "),
+                                ("cyan", c.type.value),
+                                ("magenta", " do you want to buy"),
+                            ],
+                            default=amount,
+                            min=0,
+                            max=amount,
+                        )
+                    except ValueError as e:
+                        self.out.error(str(e))
+                        continue
+
                     if value:
                         self.out.nl()
                         self.out.write_line(
@@ -241,7 +250,3 @@ class Prompt(SimpleMenuCmd):
 class Events(ServerEvents):
     def __init__(self, prompt: Prompt):
         self.prompt = prompt
-
-    # noinspection PyMethodMayBeStatic
-    def on_invalid_action(self, error: str):
-        self.prompt.out.error(error)

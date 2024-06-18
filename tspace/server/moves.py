@@ -2,6 +2,7 @@ import traceback
 import typing
 
 from tspace.common.background import schedule_background_task
+from tspace.common.errors import InvalidActionError
 from tspace.common.events import ServerEvents
 from tspace.common.models import (
     PlayerPublic,
@@ -33,22 +34,17 @@ class ShipMoves(SectorActions, PortActions):
 
     async def move_trader(self, sector_id: int, **kwargs) -> SectorPublic | None:
         if sector_id not in self.galaxy.sectors:
-            await self.events.on_invalid_action(error="Not a valid sector number")
-            return
+            raise InvalidActionError("Not a valid sector number")
 
         target = self.galaxy.sectors[sector_id]
         ship = self.galaxy.ships[self.player.ship_id]
         ship_sector = self.galaxy.sectors[ship.sector_id]
 
         if ship.player_id != self.player.id:
-            await self.events.on_invalid_action(error="Ship not occupied by player")
-            return
+            raise InvalidActionError("Ship not occupied by player")
 
         if not ship_sector.can_warp(target.id):
-            await self.events.on_invalid_action(
-                error="Target sector not adjacent to ship"
-            )
-            return
+            raise InvalidActionError("Target sector not adjacent to ship")
 
         try:
             ship_sector.exit_ship(ship)
@@ -108,23 +104,17 @@ class ShipMoves(SectorActions, PortActions):
         try:
             amount = int(amount)
         except ValueError:
-            await self.events.on_invalid_action(error="Not a valid number")
-            return
+            raise InvalidActionError("Not a valid number")
 
         trading = port.commodity(commodity)
         if not trading.buying:
-            await self.events.on_invalid_action(
-                error="This port is not buying that commodity"
-            )
-            return
+            raise InvalidActionError("This port is not buying that commodity")
 
         if trading.amount < amount:
-            await self.events.on_invalid_action(error="Not that many available")
-            return
+            raise InvalidActionError("Not that many available")
 
         if ship.holds.get(commodity, 0) < amount:
-            await self.events.on_invalid_action(error="Not enough goods in your holds")
-            return
+            raise InvalidActionError("Not enough goods in your holds")
 
         cost = int(trading.price * amount)
         self.player.credits += cost
@@ -146,28 +136,21 @@ class ShipMoves(SectorActions, PortActions):
         try:
             amount = int(amount)
         except ValueError:
-            await self.events.on_invalid_action(error="Not a valid number")
-            return
+            raise InvalidActionError("Not a valid number")
 
         trading = port.commodity(commodity)
         if trading.buying:
-            await self.events.on_invalid_action(
-                error="This port is not selling that commodity"
-            )
-            return
+            raise InvalidActionError("This port is not selling that commodity")
 
         if trading.amount < amount:
-            await self.events.on_invalid_action(error="Not that many available")
-            return
+            raise InvalidActionError("Not that many available")
 
         cost = int(trading.price * amount)
         if cost > self.player.credits:
-            await self.events.on_invalid_action(error="Not enough credits available")
-            return
+            raise InvalidActionError("Not enough credits available")
 
         if ship.holds_free < amount:
-            await self.events.on_invalid_action(error="Not enough holds available")
-            return
+            raise InvalidActionError("Not enough holds available")
 
         self.player.credits -= cost
         trading.amount -= amount
