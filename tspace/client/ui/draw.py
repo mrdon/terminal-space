@@ -15,22 +15,22 @@ from tspace.client.logging import log
 
 
 class C(Enum):
-    BLACK = "\033[0;30m"
-    RED = "\033[0;31m"
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[0;33m"
-    BLUE = "\033[0;34m"
-    MAGENTA = "\033[0;35m"
-    CYAN = "\033[0;36m"
-    WHITE = "\033[0;37m"
-    BRIGHT_BLACK = "\033[1;30m"
-    BRIGHT_RED = "\033[1;31m"
-    BRIGHT_GREEN = "\033[1;32m"
-    BRIGHT_YELLOW = "\033[1;33m"
-    BRIGHT_BLUE = "\033[1;34m"
-    BRIGHT_MAGENTA = "\033[1;35m"
-    BRIGHT_CYAN = "\033[1;36m"
-    BRIGHT_WHITE = "\033[1;37m"
+    BLACK = "\033[38;5;0m"
+    RED = "\033[38;5;1m"
+    GREEN = "\033[38;5;2m"
+    YELLOW = "\033[38;5;3m"
+    BLUE = "\033[38;5;4m"
+    MAGENTA = "\033[38;5;5m"
+    CYAN = "\033[38;5;6m"
+    WHITE = "\033[38;5;7m"
+    BRIGHT_BLACK = "\033[38;5;8m"
+    BRIGHT_RED = "\033[38;5;9m"
+    BRIGHT_GREEN = "\033[38;5;10m"
+    BRIGHT_YELLOW = "\033[38;5;11m"
+    BRIGHT_BLUE = "\033[38;5;12m"
+    BRIGHT_MAGENTA = "\033[38;5;13m"
+    BRIGHT_CYAN = "\033[38;5;14m"
+    BRIGHT_WHITE = "\033[38;5;15m"
     RESET = "\033[0m"
 
 
@@ -137,8 +137,8 @@ def stars(width: int, height: int) -> list[list[str]]:
         bg.append([])
         for x in range(width):
             if random.randint(0, 20) == 1:
-                color = C.WHITE if random.randint(1, 3) == 1 else C.BRIGHT_WHITE
-                bg[y].append(f"{color.value}.{C.RESET.value}")
+                gradient = random.randint(239, 256)
+                bg[y].append(f"\033[38;5;{gradient}m.{C.RESET.value}")
             else:
                 bg[y].append(" ")
 
