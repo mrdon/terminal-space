@@ -5,11 +5,13 @@ from asyncio import Queue
 import aiohttp
 from prompt_toolkit import Application
 from prompt_toolkit.data_structures import Size
+from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.styles import Style
 
 from tspace.client.logging import log
 from tspace.client.scene.game import TerminalScene
 from tspace.client.scene.main_menu import TitleScene
+from tspace.client.ui import style
 from tspace.client.util import sync_to_async
 from tspace.common.background import schedule_background_task
 from tspace.server.config import GameConfig
@@ -26,19 +28,16 @@ class InvalidScreenSize(Exception):
 
 
 class TwApplication(Application):
-    def __init__(self):
+    def __init__(self, local: bool = False):
         super().__init__(
             mouse_support=True,
             full_screen=True,
             refresh_interval=1 / 15,
-            style=Style(
-                [
-                    ("dialog.body", "bg:ansiblack"),
-                    ("button.disabled", "bg:ansiblack fg:ansiblack"),
-                ]
-            ),
+            style=style.css,
+            color_depth=ColorDepth.DEPTH_8_BIT,
         )
 
+        self._local_mode = local
         self.title_scene = TitleScene(self)
         self.layout = self.title_scene.layout
         self.fps = 15
@@ -50,6 +49,12 @@ class TwApplication(Application):
 
     async def start(self):
         ui_task = asyncio.create_task(self.run_async())
+
+        if self._local_mode:
+            await self.start_game()
+            self.exit()
+            await ui_task
+            return
 
         while True:
             self.layout = self.title_scene.layout

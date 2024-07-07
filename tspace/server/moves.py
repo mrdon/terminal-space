@@ -12,7 +12,7 @@ from tspace.common.models import (
 )
 from tspace.common.actions import SectorActions, PortActions
 from tspace.server.galaxy import Galaxy
-from tspace.server.models import CommodityType
+from tspace.server.models import CommodityType, SessionContext
 from tspace.server.models import Player
 from tspace.server.models import Port
 
@@ -22,13 +22,14 @@ class ShipMoves(SectorActions, PortActions):
     def __init__(
         self,
         sessions: typing.Callable[[], dict[int, ServerEvents]],
-        player: Player,
+        context: SessionContext,
         galaxy: Galaxy,
         events: ServerEvents,
     ):
         super().__init__()
         self.galaxy = galaxy
-        self.player = player
+        self.context = context
+        self.player = context.player
         self.events = events
         self.sessions = sessions
 
@@ -72,7 +73,7 @@ class ShipMoves(SectorActions, PortActions):
 
     async def _broadcast_player_enter_sector(self, player: Player):
         await self._broadcast_ship_enter_sector(
-            player.ship.to_trader(), player.sector.to_public()
+            player.ship.to_trader(self.context), player.sector.to_public(self.context)
         )
 
     async def _broadcast_ship_enter_sector(

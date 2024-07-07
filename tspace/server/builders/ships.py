@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from random import randint
 from typing import TYPE_CHECKING
 
 from tspace.common.models import ShipType
-from tspace.server.builders import weapons, countermeasures
+from tspace.server.builders import drones
+from tspace.server.builders.drones import FIGHTER
 from tspace.server.util import AutoIncrementId
 
-from tspace.server.models import Ship, DamageType
+from tspace.server.models import Ship, DroneStack
 
 if TYPE_CHECKING:
     from tspace.server.models import Galaxy
@@ -20,10 +22,10 @@ MERCHANT_CRUISER = ShipType(
     holds_initial=200,
     holds_max=75,
     warp_cost=2,
-    has_scanner_slot=True,
-    has_shield_slot=True,
-    weapons_max=3,
-    countermeasures_max=3,
+    drone_stack_max=3,
+    attack=2,
+    defense=3,
+    initiative=5,
 )
 
 
@@ -39,13 +41,11 @@ def create_initial(game: Galaxy, name: str, player_id: int, sector_id: int):
         name,
         player_id=player_id,
         sector_id=sector_id,
+        drones=[],
     )
-    ship.add_weapon(weapons.create(game, DamageType.EXPLOSIVE))
-    ship.add_weapon(weapons.create(game, DamageType.KINETIC))
-    ship.add_weapon(weapons.create(game, DamageType.ENERGY))
 
-    ship.add_countermeasure(countermeasures.create(game, DamageType.EXPLOSIVE))
-    ship.add_countermeasure(countermeasures.create(game, DamageType.KINETIC))
-    ship.add_countermeasure(countermeasures.create(game, DamageType.ENERGY))
+    for _ in range(ship.ship_type.drone_stack_max):
+        drones.create_initial(ship, drone_type=FIGHTER, count=game.rnd.randint(1, 50))
+
     game.ships[ship.id] = ship
     return ship

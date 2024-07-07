@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass
-from typing import List, Dict, Iterable, Tuple
+from typing import List, Dict, Tuple
 from typing import Optional, TYPE_CHECKING
-
-from pydantic import BaseModel
 
 from tspace.common.models import (
     PlayerPublic,
@@ -17,10 +15,20 @@ from tspace.common.models import (
     PlanetPublic,
     TraderShipPublic,
     CommodityType,
+    DroneStackPublic,
+    ShipType,
+    BattlePublic,
+    DroneType,
+    RelativeStrength,
 )
 
 if TYPE_CHECKING:
     from tspace.server.galaxy import Galaxy
+
+
+@dataclass
+class SessionContext:
+    player: Player
 
 
 class Planet:
@@ -43,11 +51,11 @@ class Planet:
         self.equipment = 0
         self.fighters = 0
 
-    def to_public(self) -> PlanetPublic:
+    def to_public(self, context: SessionContext) -> PlanetPublic:
         return PlanetPublic(
             id=self.id,
             name=self.name,
-            owner=self.owner.to_trader() if self.owner else None,
+            owner=self.owner.to_trader(context) if self.owner else None,
             planet_type=self.planet_type,
             fuel_ore=self.fuel_ore,
             organics=self.organics,
@@ -79,7 +87,7 @@ class TradingCommodity:
         self.buying = buying
         self.capacity = amount
 
-    def to_public(self) -> TradingCommodityPublic:
+    def to_public(self, context: SessionContext) -> TradingCommodityPublic:
         return TradingCommodityPublic(
             amount=self.amount,
             capacity=self.capacity,
@@ -136,12 +144,12 @@ class Port:
         self.name = name
         self.sector_id = sector_id
 
-    def to_public(self) -> PortPublic:
+    def to_public(self, context: SessionContext) -> PortPublic:
         return PortPublic(
             id=self.id,
             name=self.name,
             sector_id=self.sector_id,
-            commodities=[c.to_public() for c in self.commodities],
+            commodities=[c.to_public(context) for c in self.commodities],
         )
 
     def commodity(self, type: CommodityType):
@@ -160,9 +168,9 @@ class Sector:
         self.coords = coords
         self.port_ids = []
 
-    def to_public(self) -> SectorPublic:
+    def to_public(self, context: SessionContext) -> SectorPublic:
 
-        ports = [port.to_public() for port in self.ports]
+        ports = [port.to_public(context) for port in self.ports]
         for port in ports:
             for c in port.commodities:
                 c.amount = None
@@ -173,8 +181,8 @@ class Sector:
             id=self.id,
             warps=self.warps,
             ports=ports,
-            ships=[ship.to_trader() for ship in self.ships],
-            planets=[planet.to_public() for planet in self.planets],
+            ships=[ship.to_trader(context) for ship in self.ships],
+            planets=[planet.to_public(context) for planet in self.planets],
         )
 
     def can_warp(self, sector_id):
@@ -209,24 +217,24 @@ class Player:
         self.port_id = None
         self.sector_id = None
 
-    def to_public(self):
+    def to_public(self, context: SessionContext):
         return PlayerPublic(
             id=self.id,
             name=self.name,
-            ship=self.ship.to_public(),
+            ship=self.ship.to_public(context),
             credits=self.credits,
-            sector=self.sector.to_public(),
-            port=None if not self.port else self.port.to_public(),
+            sector=self.sector.to_public(context),
+            port=None if not self.port else self.port.to_public(context),
         )
 
-    def to_trader(self) -> TraderPublic:
+    def to_trader(self, context: SessionContext) -> TraderPublic:
         return TraderPublic(
             id=self.id,
             name=self.name,
         )
 
     @property
-    def sector(self):
+    def sector(self) -> Sector:
         return self.galaxy.sectors[self.sector_id]
 
     @sector.setter
@@ -234,11 +242,11 @@ class Player:
         self.sector_id = value.id
 
     @property
-    def ship(self):
+    def ship(self) -> Ship:
         return self.galaxy.ships[self.ship_id]
 
     @property
-    def port(self):
+    def port(self) -> Port:
         return self.galaxy.ports[self.port_id] if self.port_id else None
 
     @port.setter
@@ -259,31 +267,26 @@ class Battle:
         self.sector_id = sector_id
         self.player_ids = player_ids
 
-
-class DamageType(enum.Enum):
-    ENERGY = "Energy"
-    KINETIC = "Kinetic"
-    EXPLOSIVE = "Explosive"
-
-
-@dataclass
-class Weapon:
-    id: int
-    name: str
-    accuracy_bonus: int
-    damage_min: int
-    damage_max: int
-    damage_type: DamageType
+    def to_public(self, context: SessionContext) -> BattlePublic:
+        return BattlePublic(
+            id=self.id,
+            sector=self.game.sectors[self.sector_id].to_public(context),
+            combatants=[
+                self.game.players[id].to_trader(context) for id in self.player_ids
+            ],
+        )
 
 
-@dataclass
-class Countermeasure:
-    id: int
-    name: str
-    strengths: Iterable[DamageType]
-    strength_bonus: int
-    weaknesses: Iterable[DamageType]
-    weakness_penalty: int
+class DroneStack:
+    def __init__(self, drone_type: DroneType, size: int = 1):
+        self.drone_type = drone_type
+        self.size = size
+
+    def to_public(self, context: SessionContext):
+        return DroneStackPublic(
+            drone_type=self.drone_type,
+            size=self.size,
+        )
 
 
 class Ship:
@@ -295,6 +298,7 @@ class Ship:
         name: str,
         player_id: int,
         sector_id: int,
+        drones: list[DroneStack],
     ):
         self.id = id
         self.type = ship_type
@@ -306,30 +310,48 @@ class Ship:
         self.ship_type = ship_type
         self.sector_id = sector_id
         self.game = game
-        self.weapon_ids: List[int] = []
-        self.countermeasure_ids: List[int] = []
+        self.drones = drones
+        assert len(self.drones) <= self.type.drone_stack_max
 
-    def to_public(self) -> ShipPublic:
+    def to_public(self, context: SessionContext) -> ShipPublic:
         return ShipPublic(
             id=self.id,
             name=self.name,
             holds_capacity=self.holds_capacity,
             holds={t: val for t, val in self.holds.items()},
             sector=(
-                self.game.sectors[self.sector_id].to_public()
+                self.game.sectors[self.sector_id].to_public(context)
                 if self.sector_id
                 else None
             ),
             type=self.ship_type.name,
+            drones=[d.to_public(context) for d in self.drones],
         )
 
-    def to_trader(self) -> TraderShipPublic:
+    def to_trader(self, context: SessionContext) -> TraderShipPublic:
         return TraderShipPublic(
             id=self.id,
             name=self.name,
             type=self.ship_type,
-            trader=self.player.to_trader(),
+            trader=self.player.to_trader(context),
+            relative_strength=context.player.ship.get_relative_strength(self),
         )
+
+    def get_relative_strength(self, other_ship: Ship) -> RelativeStrength:
+        self_strength = sum(
+            stack.size * stack.drone_type.leadership for stack in self.drones
+        )
+        other_strength = sum(
+            stack.size * stack.drone_type.leadership for stack in other_ship.drones
+        )
+
+        relative_strength = int(other_strength / (self_strength + other_strength) * 100)
+
+        for strength in RelativeStrength:
+            if relative_strength >= strength.percentage:
+                return strength
+
+        raise ValueError(f"Relative strength {relative_strength} not found")
 
     def move_sector(self, sector_id):
         self.sector_id = sector_id
@@ -349,25 +371,5 @@ class Ship:
     def sector(self):
         return self.game.sectors[self.sector_id]
 
-    @property
-    def weapons(self) -> List[Weapon]:
-        return [self.game.weapons[id] for id in self.weapon_ids]
-
-    @property
-    def countermeasures(self) -> List[Countermeasure]:
-        return [self.game.countermeasures[id] for id in self.countermeasure_ids]
-
     def remove_from_holds(self, commodity_type: CommodityType, amount: int):
         self.holds[commodity_type] -= amount
-
-    def add_weapon(self, weapon: Weapon):
-        if len(self.weapon_ids) < self.ship_type.weapons_max:
-            self.weapon_ids.append(weapon.id)
-        else:
-            raise ValueError("Cannot add any more weapons")
-
-    def add_countermeasure(self, countermeasure: Countermeasure):
-        if len(self.countermeasure_ids) < self.ship_type.countermeasures_max:
-            self.countermeasure_ids.append(countermeasure.id)
-        else:
-            raise ValueError("Cannot add any more countermeasures")

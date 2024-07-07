@@ -1,4 +1,6 @@
+import asyncio
 import re
+from asyncio import Future
 from inspect import isawaitable
 from typing import Any
 from typing import Callable
@@ -35,9 +37,18 @@ class InvalidSelectionError(Exception):
 
 
 class InstantCmd:
-    def __init__(self, out: Terminal):
+    def __init__(
+        self, out: Terminal, echo_to_fragment: Callable[[str], tuple[str, str]] = None
+    ):
         self.matchers: Dict[Matcher, Callable[[str], Any]] = {}
         self.out = out
+        self.echo_to_fragment = (
+            echo_to_fragment if echo_to_fragment else self._default_echo_to_fragment
+        )
+
+    @staticmethod
+    def _default_echo_to_fragment(text: str) -> tuple[str, str]:
+        return ("", text)
 
     def regex(
         self,
@@ -62,6 +73,27 @@ class InstantCmd:
             max_length=len(char),
             validator=validator,
         )
+
+    @classmethod
+    async def yes_no(cls, out: Terminal, default: bool = True):
+        def validator(txt):
+            return txt.upper() in ("Y", "N")
+
+        out.write_line(
+            ("yellow", " (Y/N) "),
+            ("green", f"[{'Y' if default else 'N'}]? "),
+        )
+
+        result = Future()
+        cmd = cls(out, echo_to_fragment=lambda x: ("cyan bold", x.upper()))
+        cmd.literal("Y", validator=validator)(lambda _: result.set_result(True))
+        cmd.literal("N", validator=validator)(lambda _: result.set_result(False))
+        cmd.literal("")(lambda _: result.set_result(default))
+
+        task = asyncio.create_task(cmd.cmdloop())
+        await task
+
+        return result.result()
 
     def matcher(
         self,
@@ -117,7 +149,7 @@ class InstantCmd:
             if len(matches) == 1:
                 matcher, func = next(iter(matches.items()))
                 if should_write:
-                    self.out.write_line(("", char))
+                    self.out.write_line(self.echo_to_fragment(char))
                 if matcher.max_length == len(buffer) or is_end:
                     return await sync_to_async(func)(line)
             elif is_end:

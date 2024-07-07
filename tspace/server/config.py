@@ -1,6 +1,7 @@
 from typing import Any, Optional
 
 from tspace.common.models import GameConfigPublic
+from tspace.server.models import SessionContext
 
 
 class PortConfig:
@@ -37,7 +38,7 @@ class GameConfig:
         self.id = id
         self.sectors_count = sectors_count
 
-    def to_public(self) -> GameConfigPublic:
+    def to_public(self, context: SessionContext) -> GameConfigPublic:
         return GameConfigPublic(
             id=self.id,
             name=self.name,

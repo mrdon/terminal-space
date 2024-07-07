@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import Enum, StrEnum
+from enum import StrEnum, auto, Enum
 
 from pydantic import BaseModel
 
@@ -11,10 +11,22 @@ class ShipType(BaseModel):
     holds_initial: int
     holds_max: int
     warp_cost: int
-    weapons_max: int
-    countermeasures_max: int
-    has_shield_slot: bool
-    has_scanner_slot: bool
+    drone_stack_max: int
+    attack: int
+    defense: int
+    initiative: int
+
+
+class DroneType(BaseModel):
+    name: str
+    symbol_right: str
+    symbol_left: str
+    leadership: int
+    attack: int
+    defense: int
+    speed: int
+    initiative: int
+    damage_range: tuple[int, int]
 
 
 class CommodityType(StrEnum):
@@ -44,11 +56,32 @@ class TraderPublic(BaseModel):
     name: str
 
 
+class DroneStackPublic(BaseModel):
+    drone_type: DroneType
+    size: int
+
+
+class RelativeStrength(StrEnum):
+    OVERWHELMING = "Overwhelming", 90
+    VERY_STRONG = "Very Strong", 80
+    STRONG = "Strong", 60
+    EVEN = "Even", 50
+    WEAK = "Weak", 30
+    VERY_WEAK = "Very Weak", 0
+
+    def __new__(cls, value, percentage: int):
+        member = str.__new__(cls, value)
+        member._value_ = value
+        member.percentage = percentage
+        return member
+
+
 class TraderShipPublic(BaseModel):
     id: int
     name: str
     type: ShipType
     trader: TraderPublic
+    relative_strength: RelativeStrength
 
 
 class ShipPublic(BaseModel):
@@ -56,6 +89,7 @@ class ShipPublic(BaseModel):
     name: str
     holds_capacity: int
     holds: dict[CommodityType, int]
+    drones: list[DroneStackPublic]
     sector: SectorPublic
     type: str
 
@@ -91,3 +125,9 @@ class PlanetPublic(BaseModel):
     fuel_ore: int
     organics: int
     equipment: int
+
+
+class BattlePublic(BaseModel):
+    id: int
+    sector: SectorPublic
+    combatants: list[TraderPublic]

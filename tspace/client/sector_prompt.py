@@ -34,6 +34,9 @@ class Prompt(ServerEvents):
         self.instant_cmd.literal(
             "p", validator=lambda _: len(self.player.sector.ports) > 0
         )(self.do_p)
+        self.instant_cmd.literal(
+            "a", validator=lambda _: len(self.player.sector.ships) > 1
+        )(self.do_a)
         self.instant_cmd.literal("q")(self.do_q)
         self.instant_cmd.regex("[0-9]+", max_length=sys.maxsize)(self.do_move)
 
@@ -67,6 +70,35 @@ class Prompt(ServerEvents):
         self.game.player.port_id = p.id
 
         raise PromptTransition(PromptType.PORT)
+
+    async def do_a(self, line):
+        self.out.nl(2)
+        self.out.print("<Attack>", color="red", attrs=["blink"])
+        self.out.nl(2)
+        for ship in (
+            s for s in self.player.sector.ships if s.trader.id != self.player.id
+        ):
+            self.out.write_line(
+                ("green", "Attack "),
+                ("cyan", f"{ship.trader.name}'s "),
+                ("blue", f"{ship.ship_type.name} "),
+                ("cyan bold", f"({ship.relative_strength.value})"),
+            )
+            do_attack = await InstantCmd.yes_no(self.out)
+            if do_attack:
+                self.out.write_line(("red", "Attacking!"))
+            else:
+                self.out.write_line(("green", "Not attacking"))
+
+        # player, port = await self.actions.enter_battle(
+        #
+        #     port_id=self.player.sector.ports[0].id
+        # )
+        # p = self.game.update_port(port)
+        # self.game.update_player(player)
+        # self.game.player.port_id = p.id
+        #
+        # raise PromptTransition(PromptType.PORT)
 
     def do_q(self, line):
         raise PromptTransition(PromptType.QUIT)
@@ -200,17 +232,22 @@ class Prompt(ServerEvents):
                 item.value.append(Fragment("magenta", ")"))
                 items.append(item)
             data.rows.append(Row(header=Fragment("green", "Port"), items=items))
-        #
-        # other_ships = [s for s in sector.ships if s.trader.id != self.player.ship.id]
-        # if other_ships:
-        #     lines = []
-        #     for ship in other_ships:
-        #         lines.append(Color("{red}{trader}{/red}{yellow},{/yellow}").format(trader=ship.trader.name))
-        #         lines.append(Color("{green}in{/green} {cyan}{ship}{/cyan} {green}({ship_type}){/green}").format(
-        #                 ship=ship.name,
-        #                 ship_type="unknown"
-        #         ))
-        #     data.append((Color.yellow("Ships"), lines))
+
+        other_ships = [s for s in sector.ships if s.trader.id != self.player.id]
+        if other_ships:
+            ship_items = []
+            for ship in other_ships:
+                item = Item(
+                    [
+                        Fragment("red", ship.trader.name),
+                        Fragment("yellow", ", "),
+                        Fragment("green", "in "),
+                        Fragment("cyan", ship.name),
+                        Fragment("green", f" ({ship.ship_type.name})"),
+                    ]
+                )
+                ship_items.append(item)
+            data.rows.append(Row(header=Fragment("yellow", "Ships"), items=ship_items))
 
         print_grid(self.out, data, separator=Fragment("yellow", ": "))
 

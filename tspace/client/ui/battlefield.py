@@ -1,25 +1,24 @@
 import asyncio
-import typing
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import partial
 from random import randrange
 
+import networkx as nx
 from prompt_toolkit import Application
 from prompt_toolkit.application import get_app
 from prompt_toolkit.key_binding import KeyBindings
-
-from prompt_toolkit.layout import UIContent, VSplit, BufferControl, Layout
+from prompt_toolkit.layout import UIContent, Layout
 from prompt_toolkit.layout import UIControl
 from prompt_toolkit.layout import Window
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
-from tspace.client.models import Player, Sector
-import networkx as nx
+from tspace.client.models import Player, Sector, Trader
 
 
 @dataclass
 class Stack:
-    player: Player
+    target: Player | Trader
     ship: str
     size: int = 1
 
@@ -57,7 +56,7 @@ class Battlefield(UIControl):
 
         stacks_by_player: dict[Player, list[Stack]] = defaultdict(list)
         for stack in stacks:
-            stacks_by_player[stack.player].append(stack)
+            stacks_by_player[stack.target].append(stack)
 
         x_pos = 0
         for player, stacks in stacks_by_player.items():
@@ -123,32 +122,36 @@ class Battlefield(UIControl):
 
                     self._mouse_enabled = False
 
-                    async def move():
-                        path: list[Space] = self.plot_path(self._last_selected, space)
-                        for step in path[1:-1]:
-                            step.stack = self._last_selected.stack
-                            self._last_selected.stack = None
-                            self._last_selected.selected = False
+                    asyncio.create_task(
+                        self.move_stack(self._last_selected.stack, space)
+                    )
 
-                            step.selected = True
-                            self._last_selected = step
-                            get_app().invalidate()
-                            await asyncio.sleep(0.1)
-
-                        space.stack = self._last_selected.stack
-                        self._last_selected.stack = None
-                        self._last_selected.selected = False
-                        get_app().invalidate()
-                        self._last_selected = None
-                        self._mouse_enabled = True
-
-                    asyncio.create_task(move())
-
-                elif space.stack:
+                elif space.stack and isinstance(space.stack.target, Player):
                     self._last_selected = space
                     space.selected = True
 
         return None
+
+    async def move_stack(self, stack: Stack, space: Space) -> None:
+        self._last_selected.stack = stack
+        self._last_selected.selected = True
+        path: list[Space] = self.plot_path(self._last_selected, space)
+        for step in path[1:-1]:
+            step.stack = self._last_selected.stack
+            self._last_selected.stack = None
+            self._last_selected.selected = False
+
+            step.selected = True
+            self._last_selected = step
+            get_app().invalidate()
+            await asyncio.sleep(0.1)
+
+        space.stack = self._last_selected.stack
+        self._last_selected.stack = None
+        self._last_selected.selected = False
+        get_app().invalidate()
+        self._last_selected = None
+        self._mouse_enabled = True
 
     def plot_path(self, start: Space, end: Space):
         g = self._gen_graph(start)
@@ -178,46 +181,60 @@ class Battlefield(UIControl):
         get_app().output.enable_mouse_support()
 
         def get_line(i):
+            grid_bg = "bg:black"
+            grid_color = f"{grid_bg} fg:blue"
             if i - 1 > self.grid_height * 2:
                 return [(f"", "." * width)]
             if i - 1 == self.grid_height * 2:
-                return [(f"", "     \u2594\u2594\u2594" * (self.grid_width // 2))]
+                return [
+                    (grid_color, "     \u2594\u2594\u2594" * (self.grid_width // 2)),
+                    (grid_color, " "),
+                ]
 
             result = []
             for i_x in range(0, self.grid_width // 2):
                 if i % 2 == 0:
                     if (i - 1) == self.grid_height * 2 - 1 and i_x == 0:
-                        result.append(("", " \u2594\u2594\u2594\u2572"))
+                        result.append((grid_color, " \u2594\u2594\u2594\u2572"))
                     else:
-                        result.append(("", "\u2571\u2594\u2594\u2594\u2572"))
+                        result.append((grid_color, "\u2571\u2594\u2594\u2594\u2572"))
                     x = i_x * 2 + 1
                 else:
                     x = i_x * 2
-                    result.append(("", "\u2572"))
+                    result.append((grid_color, "\u2572"))
 
                 if i == 0:
-                    result.append(("", "   "))
+                    result.append((grid_color, "   "))
                 else:
                     y = (i - 1) // 2
                     # print(f"y: {y}, x: {x}, i: {i}")
                     space = self.grid[y][x]
                     if space.selected and space.stack:
-                        result.append(("red", f" {space.stack.ship} "))
+                        if isinstance(space.stack.target, Player):
+                            result.append(
+                                (f"green {grid_bg}", _stack_to_str(space.stack))
+                            )
+                        else:
+                            result.append(
+                                (f"red {grid_bg}", _stack_to_str(space.stack))
+                            )
                     else:
                         if space.stack:
-                            marker = f" {space.stack.ship} "
+                            marker = _stack_to_str(space.stack)
                         else:
                             marker = "   "
-                        result.append(("", marker))
+                        result.append((grid_bg, marker))
 
                     if i % 2 == 1:
-                        result.append(("", "\u2571\u2594\u2594\u2594"))
+                        result.append((grid_color, "\u2571\u2594\u2594\u2594"))
 
+            if i == 0:
+                result.append((grid_color, " "))
             if i > 0:
                 if i % 2 == 0:
-                    result.append(("", "\u2571"))
+                    result.append((grid_color, "\u2571"))
                 else:
-                    result.append(("", "\u2572"))
+                    result.append((grid_color, "\u2572"))
 
             for _ in range(self.grid_width, width):
                 result.append(("", " "))
@@ -232,14 +249,25 @@ class Battlefield(UIControl):
         return self.window
 
 
+def _stack_to_str(stack: Stack) -> str:
+    chars = [stack.ship]
+    if stack.size >= 10:
+        chars.append(chr(0x2080 + stack.size // 10))
+        chars.append(chr(0x2080 + stack.size % 10))
+    else:
+        chars.append(chr(0x2080 + stack.size))
+        chars.append(" ")
+    return "".join(chars)
+
+
 def main():
     grid = Battlefield(
         stacks=[
-            Stack("player1", "\u257E"),
-            Stack("player1", "\u257E"),
-            Stack("player1", "\u257E"),
-            Stack("player2", "\u257C"),
-            Stack("player2", "\u257C"),
+            Stack("player1", "\u257E", size=randrange(0, 9)),
+            Stack("player1", "\u257E", size=randrange(0, 99)),
+            Stack("player1", "\u257E", size=randrange(0, 99)),
+            Stack("player2", "\u257C", size=randrange(0, 99)),
+            Stack("player2", "\u257C", size=randrange(0, 99)),
         ],
         sector=None,
         max_x=20,

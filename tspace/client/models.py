@@ -15,6 +15,9 @@ from tspace.common.models import (
     PlayerPublic,
     TradingCommodityPublic,
     TraderPublic,
+    DroneStackPublic,
+    ShipType,
+    RelativeStrength,
 )
 
 if typing.TYPE_CHECKING:
@@ -136,6 +139,7 @@ class Trader:
         self._game = game
         self.id = client.id
         self.name: str = ""
+        self.update(client)
 
     def update(self, client: TraderPublic):
         self.name = client.name
@@ -147,10 +151,15 @@ class TraderShip:
         self._game = game
         self.name: str = ""
         self.trader_id: int = 0
+        self.ship_type: ShipType = client.type
+        self.relative_strength: RelativeStrength = RelativeStrength.EVEN
+        self.update(client)
 
     def update(self, client: TraderShipPublic):
         self.name = client.name
         self.trader_id = client.trader.id
+        self.ship_type = client.type
+        self.relative_strength = client.relative_strength
 
     @property
     def trader(self) -> Trader | None:
@@ -185,6 +194,13 @@ class Sector:
         return [self._game.planets.get(id) for id in self.planet_ids]
 
 
+class DroneStack:
+    def __init__(self, game: Game, client: DroneStackPublic):
+        self.drone_type = client.drone_type
+        self.size = client.size
+        self._game = game
+
+
 class Ship:
     def __init__(self, game: Game, client: ShipPublic):
         self._game = game
@@ -192,6 +208,7 @@ class Ship:
         self.name: str = ""
         self.holds_capacity: int = 0
         self.sector_id: int = 0
+        self.drones: list[DroneStack] = []
 
         self.holds: dict[CommodityType, int] = defaultdict(lambda: 0)
         self.update(client)
@@ -202,6 +219,7 @@ class Ship:
         self.holds_capacity = client.holds_capacity
 
         self.holds.update(client.holds)
+        self.drones = [DroneStack(self._game, drone) for drone in client.drones]
         self.sector_id = client.sector.id if client.sector else None
 
     @property

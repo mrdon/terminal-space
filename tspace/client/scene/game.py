@@ -14,7 +14,7 @@ from prompt_toolkit.widgets import Label
 from prompt_toolkit.widgets import MenuContainer
 from prompt_toolkit.widgets import MenuItem
 
-from tspace.client.models import CommodityType, Sector
+from tspace.client.models import CommodityType, Sector, Ship
 from tspace.client.session import Session
 from tspace.client.terminal import Terminal
 from tspace.client.terminal_text_area import TerminalTextArea
@@ -144,7 +144,15 @@ class TerminalScene:
         return [
             Stat(title="Name", callable=lambda: ship().name),
             Stat(title="Type", callable=lambda: ship().type),
+            Stat(title="Drones", callable=lambda: self._get_drone_stacks_text(ship())),
         ]
+
+    @staticmethod
+    def _get_drone_stacks_text(ship: Ship) -> str:
+        lines = [
+            f"\n  - {stack.drone_type.name} ({stack.size})" for stack in ship.drones
+        ]
+        return "".join(lines)
 
     def get_warps_label(self, condition: Callable[[], bool]):
         frags = []

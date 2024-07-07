@@ -12,8 +12,6 @@ from tspace.server.models import (
     Ship,
     Planet,
     Port,
-    Weapon,
-    Countermeasure,
 )
 from tspace.server.builders import planets, players, ports, sectors, ships
 
@@ -33,8 +31,6 @@ class Galaxy:
         self.players: Dict[int, Player] = {}
         self.ships: Dict[int:Ship] = {}
         self.planets: Dict[int, Planet] = {}
-        self.weapons: Dict[int, Weapon] = {}
-        self.countermeasures: Dict[int, Countermeasure] = {}
         self._graph = None
 
         self.rnd = random.Random(self.config.seed)
@@ -82,3 +78,12 @@ class Galaxy:
 
     def start(self):
         self._bang_world()
+        p = players.create(self, "Moorg")
+
+        sec = self.sectors[self.config.player.initial_sector_id]
+        ship = ships.create_initial(self, "Foo", p.id, sec.id)
+
+        p.ship_id = ship.id
+        p.visit_sector(sec.id)
+        ship.move_sector(sec.id)
+        sec.enter_ship(ship)

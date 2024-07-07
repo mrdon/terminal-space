@@ -1,4 +1,4 @@
-from tspace.common.models import SectorPublic, PlayerPublic, PortPublic
+from tspace.common.models import SectorPublic, PlayerPublic, PortPublic, BattlePublic
 
 
 class SectorActions:
@@ -6,6 +6,9 @@ class SectorActions:
         pass
 
     async def enter_port(self, port_id: int) -> tuple[PlayerPublic, PortPublic]:
+        pass
+
+    async def enter_battle(self, trader_id: int) -> BattlePublic:
         pass
 
 
