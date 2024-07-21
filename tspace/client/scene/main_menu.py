@@ -8,13 +8,13 @@ from prompt_toolkit.widgets import Button
 from prompt_toolkit.widgets import Label
 
 from tspace.client.logging import log
+from tspace.client.scene.base import Scene
 from tspace.client.ui.menu import MenuDialog
 from tspace.client.ui.starfield import Starfield
 
 
-class TitleScene:
-    def __init__(self, app: Application):
-        self.app = app
+class TitleScene(Scene):
+    def __init__(self):
         self.starfield = Starfield()
         self.dialog = MenuDialog(
             title="Terminal Space",
@@ -61,4 +61,98 @@ class TitleScene:
 
     def end(self):
         self.starfield.paused = True
+        pass
+
+    async def run(self):
+        cmd = await self.start()
+        while True:
+            self.layout = self.title_scene.layout
+            self.invalidate()
+            action = await self.title_scene.start()
+            log.info(f"got {action} from title")
+            if action == "start":
+                await self.start_game()
+            elif action == "join":
+                await self.join("localhost", "8080")
+            elif action == "quit":
+                self.exit()
+                await ui_task
+                break
+            else:
+                breakpoint()
+
+            # self.exit(False)
+        # await ui_task
+
+    async def join(self, host: str, port: str):
+
+        out_queue = Queue()
+
+        terminal_scene = TerminalScene(self, lambda text: out_queue.put(text))
+        self.layout = terminal_scene.layout
+
+        async with aiohttp.ClientSession() as aiosession:
+            async with aiosession.ws_connect(
+                    f"ws://{host}:{port}/?name=Remote%20Jim"
+            ) as ws:
+
+                async def read_input():
+                    async for msg in ws:
+                        if msg.type == aiohttp.WSMsgType.TEXT:
+                            await terminal_scene.session.bus(msg.data)
+                        elif msg.type == aiohttp.WSMsgType.ERROR:
+                            print("error")
+                            break
+
+                async def write_output():
+                    while True:
+                        try:
+                            msg = await out_queue.get()
+                        except InterruptedError:
+                            break
+                        await ws.send_str(msg)
+
+                write_task = asyncio.create_task(write_output())
+                schedule_background_task(read_input())
+
+                try:
+                    await terminal_scene.start()
+                except CancelledError:
+                    pass  # print("cancelled'")
+
+                write_task.cancel()
+
+        terminal_scene.end()
+
+    async def start_game(self):
+        config = GameConfig(
+            1, "Test Game", diameter=10, seed="test", debug_network=False
+        )
+        server = Server(config)
+
+        server_to_app = Queue()
+
+        incoming_for_server = await server.join(
+            "Jim", sync_to_async(server_to_app.put_nowait)
+        )
+
+        terminal_scene = TerminalScene(self, incoming_for_server)
+        self.layout = terminal_scene.layout
+
+        async def read_from_server():
+            while True:
+                msg = await server_to_app.get()
+                log.info(f"got server-to_app: {msg}")
+                await terminal_scene.session.bus(msg)
+
+        server_out_task = asyncio.create_task(read_from_server())
+
+        try:
+            await terminal_scene.start()
+        except CancelledError:
+            pass  # print("cancelled'")
+
+        server_out_task.cancel()
+
+        terminal_scene.end()
         pass

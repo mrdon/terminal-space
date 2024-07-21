@@ -5,7 +5,7 @@ from collections import defaultdict
 import networkx as nx
 
 from tspace.client.logging import log
-from tspace.client.models import GameConfig
+from tspace.client.models import GameConfig, Battle
 from tspace.client.models import Planet
 from tspace.client.models import Player
 from tspace.client.models import Port
@@ -19,7 +19,7 @@ from tspace.common.models import (
     TraderPublic,
     TraderShipPublic,
     SectorPublic,
-    ShipPublic,
+    ShipPublic, BattlePublic,
 )
 
 
@@ -32,6 +32,7 @@ class Game:
         self.ports: dict[int, Port] = {}
         self.traders: dict[int, Trader] = {}
         self.planets: dict[int, Planet] = {}
+        self.battles: dict[int, Battle] = {}
         self.player: Player = None
 
     # noinspection PyUnresolvedReferences
@@ -105,6 +106,14 @@ class Game:
             self.ports[client.id] = Port(self, client)
 
         return self.ports[client.id]
+
+    def update_battle(self, client: BattlePublic) -> Battle:
+        if client.id in self.battles:
+            self.battles[client.id].update(client)
+        else:
+            self.battles[client.id] = Battle(self, client)
+
+        return self.battles[client.id]
 
     def update_trader(self, client: TraderPublic) -> Trader:
         if client.id in self.traders:

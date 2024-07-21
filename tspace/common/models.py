@@ -48,7 +48,7 @@ class PlayerPublic(BaseModel):
     ship: ShipPublic
     credits: int
     sector: SectorPublic
-    port: PortPublic | None
+    port: PortPublic | None = None
 
 
 class TraderPublic(BaseModel):
@@ -82,6 +82,12 @@ class TraderShipPublic(BaseModel):
     type: ShipType
     trader: TraderPublic
     relative_strength: RelativeStrength
+    in_battle: bool = False
+
+
+class CombatantPublic(BaseModel):
+    ship: TraderShipPublic
+    drones: list[DroneStackPublic]
 
 
 class ShipPublic(BaseModel):
@@ -92,6 +98,7 @@ class ShipPublic(BaseModel):
     drones: list[DroneStackPublic]
     sector: SectorPublic
     type: str
+    battle: BattlePublic | None = None
 
 
 class TradingCommodityPublic(BaseModel):
@@ -130,4 +137,5 @@ class PlanetPublic(BaseModel):
 class BattlePublic(BaseModel):
     id: int
     sector: SectorPublic
-    combatants: list[TraderPublic]
+    attacker: ShipPublic
+    target: CombatantPublic

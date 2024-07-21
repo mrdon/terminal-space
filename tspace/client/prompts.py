@@ -6,6 +6,7 @@ class PromptType(Enum):
     PORT = 2
     QUIT = 3
     NONE = 4
+    BATTLE = 5
 
 
 class PromptTransition(Exception):

@@ -17,7 +17,7 @@ from tspace.client.stream import print_action
 from tspace.client.stream import print_grid
 from tspace.client.ui.warp import WarpDialog
 from tspace.common.events import ServerEvents
-from tspace.common.models import TraderShipPublic, SectorPublic
+from tspace.common.models import TraderShipPublic, SectorPublic, BattlePublic
 from tspace.common.actions import SectorActions
 
 
@@ -86,19 +86,9 @@ class Prompt(ServerEvents):
             )
             do_attack = await InstantCmd.yes_no(self.out)
             if do_attack:
-                self.out.write_line(("red", "Attacking!"))
-            else:
-                self.out.write_line(("green", "Not attacking"))
-
-        # player, port = await self.actions.enter_battle(
-        #
-        #     port_id=self.player.sector.ports[0].id
-        # )
-        # p = self.game.update_port(port)
-        # self.game.update_player(player)
-        # self.game.player.port_id = p.id
-        #
-        # raise PromptTransition(PromptType.PORT)
+                self.out.write_line(("red", "Attacking..."))
+                await self.actions.enter_battle(self.player.ship_id, ship.id)
+                raise PromptTransition(PromptType.BATTLE)
 
     def do_q(self, line):
         raise PromptTransition(PromptType.QUIT)

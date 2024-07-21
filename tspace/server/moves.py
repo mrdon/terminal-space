@@ -8,11 +8,12 @@ from tspace.common.models import (
     PlayerPublic,
     SectorPublic,
     TraderShipPublic,
-    PortPublic,
+    PortPublic, BattlePublic,
 )
 from tspace.common.actions import SectorActions, PortActions
+from tspace.server.builders import battles
 from tspace.server.galaxy import Galaxy
-from tspace.server.models import CommodityType, SessionContext
+from tspace.server.models import CommodityType, SessionContext, Ship, Battle
 from tspace.server.models import Player
 from tspace.server.models import Port
 
@@ -52,7 +53,7 @@ class ShipMoves(SectorActions, PortActions):
             target.enter_ship(ship)
             ship.move_sector(target.id)
             self.player.visit_sector(target.id)
-            target_public = target.to_public()
+            target_public = target.to_public(self.context)
 
             async def do_after():
                 ship_as_trader = ship.to_trader()
@@ -61,7 +62,7 @@ class ShipMoves(SectorActions, PortActions):
                 ):
                     if ship_other.player_id in self.sessions():
                         await self.sessions()[ship_other.player_id].on_ship_exit_sector(
-                            sector=ship_sector.to_public(), ship=ship_as_trader
+                            sector=ship_sector.to_public(self.context), ship=ship_as_trader
                         )
 
                 await self._broadcast_ship_enter_sector(ship_as_trader, target_public)
@@ -90,11 +91,31 @@ class ShipMoves(SectorActions, PortActions):
     ) -> tuple[PlayerPublic, PortPublic]:
         port: Port = self.galaxy.ports[port_id]
         self.player.port = port
-        return self.player.to_public(), port.to_public()
+        return self.player.to_public(self.context), port.to_public(self.context)
+
+    async def enter_battle(
+        self, attacker_ship_id: int, target_ship_id: int, **kwargs
+    ) -> BattlePublic:
+        attacker_ship: Ship = self.galaxy.ships[attacker_ship_id]
+        target_ship: Ship = self.galaxy.ships[target_ship_id]
+
+        if attacker_ship.player_id != self.player.id:
+            raise InvalidActionError("Not your ship")
+
+        if attacker_ship.battle_id or target_ship.battle_id:
+            raise InvalidActionError("Already in a battle")
+
+        if attacker_ship.sector_id != target_ship.sector_id:
+            raise InvalidActionError("Not in the same sector")
+
+        battle = battles.create(self.galaxy, self.player.ship, target_ship)
+        public_battle = battle.to_public(self.context)
+        await self.events.on_battle_enter(public_battle)
+        return public_battle
 
     async def exit_port(self, port_id: int) -> PlayerPublic:
         self.player.port = None
-        return self.player.to_public()
+        return self.player.to_public(self.context)
 
     async def sell_to_port(
         self, port_id: int, commodity: CommodityType, amount: int
@@ -122,7 +143,7 @@ class ShipMoves(SectorActions, PortActions):
         trading.amount -= amount
         ship.remove_from_holds(commodity, amount)
 
-        return self.player.to_public(), port.to_public()
+        return self.player.to_public(self.context), port.to_public(self.context)
 
     async def buy_from_port(
         self,
@@ -157,4 +178,4 @@ class ShipMoves(SectorActions, PortActions):
         trading.amount -= amount
         ship.add_to_holds(commodity, amount)
 
-        return self.player.to_public(), port.to_public()
+        return self.player.to_public(self.context), port.to_public(self.context)

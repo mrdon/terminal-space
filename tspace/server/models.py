@@ -19,7 +19,7 @@ from tspace.common.models import (
     ShipType,
     BattlePublic,
     DroneType,
-    RelativeStrength,
+    RelativeStrength, CombatantPublic,
 )
 
 if TYPE_CHECKING:
@@ -250,7 +250,7 @@ class Player:
         return self.galaxy.ports[self.port_id] if self.port_id else None
 
     @port.setter
-    def port(self, value: Port):
+    def port(self, value: Port | None):
         self.port_id = value.sector_id if value else None
 
     def visit_sector(self, sector_id):
@@ -261,19 +261,19 @@ class Player:
 
 
 class Battle:
-    def __init__(self, game: Galaxy, id: int, sector_id: int, player_ids: list[int]):
+    def __init__(self, game: Galaxy, id: int, sector_id: int, attacker_ship_id: int, target_ship_id: int):
         self.id = id
         self.game = game
         self.sector_id = sector_id
-        self.player_ids = player_ids
+        self.attacker_ship_id = attacker_ship_id
+        self.target_ship_id = target_ship_id
 
     def to_public(self, context: SessionContext) -> BattlePublic:
         return BattlePublic(
             id=self.id,
             sector=self.game.sectors[self.sector_id].to_public(context),
-            combatants=[
-                self.game.players[id].to_trader(context) for id in self.player_ids
-            ],
+            attacker=self.game.ships[self.attacker_ship_id].to_public(context),
+            target=self.game.ships[self.target_ship_id].to_combatant(context),
         )
 
 
@@ -311,6 +311,7 @@ class Ship:
         self.sector_id = sector_id
         self.game = game
         self.drones = drones
+        self.battle_id: int | None = None
         assert len(self.drones) <= self.type.drone_stack_max
 
     def to_public(self, context: SessionContext) -> ShipPublic:
@@ -327,6 +328,12 @@ class Ship:
             type=self.ship_type.name,
             drones=[d.to_public(context) for d in self.drones],
         )
+    
+    def to_combatant(self, context: SessionContext) -> CombatantPublic:
+        return CombatantPublic(
+            ship=self.to_trader(context),
+            drones=[d.to_public(context) for d in self.drones],
+        )
 
     def to_trader(self, context: SessionContext) -> TraderShipPublic:
         return TraderShipPublic(
@@ -335,7 +342,16 @@ class Ship:
             type=self.ship_type,
             trader=self.player.to_trader(context),
             relative_strength=context.player.ship.get_relative_strength(self),
+            in_battle=bool(self.battle_id is not None)
         )
+
+    @property
+    def battle(self) -> Battle:
+        return self.game.battles[self.battle_id] if self.battle_id else None
+
+    @battle.setter
+    def battle(self, value: Battle | None):
+        self.battle_id = value.id if value else None
 
     def get_relative_strength(self, other_ship: Ship) -> RelativeStrength:
         self_strength = sum(
@@ -364,11 +380,11 @@ class Ship:
         return self.holds_capacity - sum(self.holds.values())
 
     @property
-    def player(self):
+    def player(self) -> Player:
         return self.game.players[self.player_id]
 
     @property
-    def sector(self):
+    def sector(self) -> Sector:
         return self.game.sectors[self.sector_id]
 
     def remove_from_holds(self, commodity_type: CommodityType, amount: int):

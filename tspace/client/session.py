@@ -16,7 +16,7 @@ from tspace.client.prompts import PromptType
 from tspace.client.terminal import Terminal
 from tspace.client.util import EventBus
 from tspace.common.models import GameConfigPublic, PlayerPublic, PortPublic
-from tspace.common.actions import SectorActions, PortActions
+from tspace.common.actions import SectorActions, PortActions, BattleActions
 
 
 class Session:
@@ -55,6 +55,8 @@ class Session:
                         self.prompt = self._start_sector_prompt()
                     elif e.next == PromptType.PORT:
                         self.prompt = self._start_port_prompt()
+                    elif e.next == PromptType.BATTLE:
+                        await self._start_battle()
                     elif e.next == PromptType.QUIT:
                         break
                     elif e.next == PromptType.NONE:
@@ -106,6 +108,14 @@ class Session:
         actions = self.bus.wire_sending_methods(PortActions)
         prompt = port_prompt.Prompt(self.game, actions, self.term)
         events = port_prompt.Events(prompt)
+        self.bus.append_event_listener(events)
+        return prompt
+
+    def _start_battle(self):
+        actions = self.bus.wire_sending_methods(BattleActions)
+
+        prompt = battle_prompt.Prompt(self.game, actions, self.term)
+        events = battle_prompt.Events(prompt)
         self.bus.append_event_listener(events)
         return prompt
 

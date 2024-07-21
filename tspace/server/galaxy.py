@@ -11,7 +11,7 @@ from tspace.server.models import (
     Player,
     Ship,
     Planet,
-    Port,
+    Port, Battle,
 )
 from tspace.server.builders import planets, players, ports, sectors, ships
 
@@ -25,12 +25,13 @@ class Galaxy:
         self.id = config.id
         self.name = config.name
 
-        self.sectors: Dict[int, Sector] = {}
-        self.ports: Dict[int, Port] = {}
+        self.sectors: dict[int, Sector] = {}
+        self.ports: dict[int, Port] = {}
         self.sector_coords_to_id = {}
-        self.players: Dict[int, Player] = {}
-        self.ships: Dict[int:Ship] = {}
-        self.planets: Dict[int, Planet] = {}
+        self.players: dict[int, Player] = {}
+        self.ships: dict[int:Ship] = {}
+        self.planets: dict[int, Planet] = {}
+        self.battles: dict[int, Battle] = {}
         self._graph = None
 
         self.rnd = random.Random(self.config.seed)

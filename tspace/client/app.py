@@ -9,6 +9,7 @@ from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.styles import Style
 
 from tspace.client.logging import log
+from tspace.client.scene.base import Scene, SceneId
 from tspace.client.scene.game import TerminalScene
 from tspace.client.scene.main_menu import TitleScene
 from tspace.client.ui import style
@@ -39,6 +40,7 @@ class TwApplication(Application):
 
         self._local_mode = local
         self.title_scene = TitleScene(self)
+        self.scene: Scene = self.title_scene
         self.layout = self.title_scene.layout
         self.fps = 15
 
@@ -49,6 +51,41 @@ class TwApplication(Application):
 
     async def start(self):
         ui_task = asyncio.create_task(self.run_async())
+
+
+        if self._local_mode:
+            game_scene = TerminalScene(self, lambda x: None)
+            self.scene = game_scene
+
+        while True:
+            self.layout = self.scene.layout
+            self.invalidate()
+            scene_id = await self.scene.run()
+            match scene_id:
+                case SceneId.MAIN_MENU:
+                    self.scene = self.title_scene
+                case SceneId.GAME:
+                    self.scene = game_scene
+                case SceneId.QUIT:
+                    self.exit()
+                    await ui_task
+                    break
+                case _:
+                    breakpoint()
+
+            action = await self.scene.start()
+            log.info(f"got {action} from title")
+            if action == "start":
+                await self.start_game()
+            elif action == "join":
+                await self.join("localhost", "8080")
+            elif action == "quit":
+                self.exit()
+                await ui_task
+                break
+            else:
+                breakpoint()
+
 
         if self._local_mode:
             await self.start_game()

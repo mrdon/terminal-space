@@ -8,7 +8,7 @@ class SectorActions:
     async def enter_port(self, port_id: int) -> tuple[PlayerPublic, PortPublic]:
         pass
 
-    async def enter_battle(self, trader_id: int) -> BattlePublic:
+    async def enter_battle(self, attacker_ship_id: int, target_ship_id: int) -> BattlePublic:
         pass
 
 
@@ -24,4 +24,9 @@ class PortActions:
         pass
 
     async def exit_port(self, port_id: int) -> PlayerPublic:
+        pass
+
+
+class BattleActions:
+    async def exit_battle(self, battle_id: int) -> PlayerPublic:
         pass
